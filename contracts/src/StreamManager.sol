@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -9,15 +10,16 @@ import {StreamVault} from "./StreamVault.sol";
 import {AccountingLib} from "./AccountingLib.sol";
 
 contract StreamManager is ReentrancyGuard, Pausable, Ownable {
-    using AccountingLib for uint256;
+    using SafeERC20 for IERC20;
 
     struct Stream {
         address sender;
         address recipient;
         address token;
         uint256 totalAmount;
-        uint256 ratePerSecond;
+        uint256 claimedAmount;
         uint256 startTime;
+        uint256 duration;
         uint256 stopTime;
         uint256 lastClaimed;
         bool isActive;
@@ -70,18 +72,16 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         require(duration > 0, "Duration must be greater than zero");
 
         uint256 streamId = ++streamCounter;
-        uint256 ratePerSecond = AccountingLib.calculateRatePerSecond(
-            totalAmount,
-            duration
-        );
+        uint256 ratePerSecond = totalAmount / duration;
 
         streams[streamId] = Stream({
             sender: msg.sender,
             recipient: recipient,
             token: token,
             totalAmount: totalAmount,
-            ratePerSecond: ratePerSecond,
+            claimedAmount: 0,
             startTime: block.timestamp,
+            duration: duration,
             stopTime: 0,
             lastClaimed: block.timestamp,
             isActive: true
@@ -90,10 +90,7 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         senderStreams[msg.sender].push(streamId);
         recipientStreams[recipient].push(streamId);
 
-        require(
-            IERC20(token).transferFrom(msg.sender, address(VAULT), totalAmount),
-            "Transfer failed"
-        );
+        IERC20(token).safeTransferFrom(msg.sender, address(VAULT), totalAmount);
 
         emit StreamCreated(
             streamId,
@@ -114,29 +111,28 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         require(stream.isActive, "Stream not active");
         require(stream.sender == msg.sender, "Only sender can cancel");
 
-        uint256 accruedAmount = AccountingLib.calculateAccrued(
-            stream.ratePerSecond,
-            stream.startTime,
-            stream.stopTime,
-            stream.lastClaimed
-        );
+        AccountingLib.AccrualResult memory accrual = AccountingLib
+            .calculateAccrual(
+                stream.totalAmount,
+                stream.claimedAmount,
+                stream.startTime,
+                stream.duration,
+                stream.lastClaimed,
+                stream.stopTime,
+                block.timestamp
+            );
 
-        stream.stopTime = block.timestamp;
         stream.isActive = false;
 
-        if (accruedAmount > 0) {
-            VAULT.withdraw(stream.token, stream.recipient, accruedAmount);
-            stream.lastClaimed = block.timestamp;
+        if (accrual.claimable > 0) {
+            stream.claimedAmount += accrual.claimable;
+            VAULT.withdraw(stream.token, stream.recipient, accrual.claimable);
         }
 
-        uint256 totalStreamed = AccountingLib.calculateAccrued(
-            stream.ratePerSecond,
-            stream.startTime,
-            block.timestamp,
-            stream.startTime
-        );
-        uint256 remainingAmount = stream.totalAmount - totalStreamed;
+        stream.lastClaimed = accrual.accrualPoint;
+        stream.stopTime = accrual.accrualPoint;
 
+        uint256 remainingAmount = stream.totalAmount - stream.claimedAmount;
         if (remainingAmount > 0) {
             VAULT.withdraw(stream.token, stream.sender, remainingAmount);
         }
@@ -154,19 +150,28 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         require(stream.isActive, "Stream not active");
         require(stream.recipient == msg.sender, "Only recipient can claim");
 
-        uint256 accruedAmount = AccountingLib.calculateAccrued(
-            stream.ratePerSecond,
-            stream.startTime,
-            stream.stopTime,
-            stream.lastClaimed
-        );
+        AccountingLib.AccrualResult memory accrual = AccountingLib
+            .calculateAccrual(
+                stream.totalAmount,
+                stream.claimedAmount,
+                stream.startTime,
+                stream.duration,
+                stream.lastClaimed,
+                stream.stopTime,
+                block.timestamp
+            );
 
-        require(accruedAmount > 0, "No amount to claim");
+        require(accrual.claimable > 0, "No amount to claim");
 
-        stream.lastClaimed = block.timestamp;
-        VAULT.withdraw(stream.token, stream.recipient, accruedAmount);
+        stream.claimedAmount += accrual.claimable;
+        stream.lastClaimed = accrual.accrualPoint;
+        if (stream.claimedAmount >= stream.totalAmount) {
+            stream.isActive = false;
+            stream.stopTime = accrual.accrualPoint;
+        }
+        VAULT.withdraw(stream.token, stream.recipient, accrual.claimable);
 
-        emit Claimed(streamId, stream.recipient, accruedAmount);
+        emit Claimed(streamId, stream.recipient, accrual.claimable);
     }
 
     function getStreamableAmount(
@@ -177,13 +182,17 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
             return 0;
         }
 
-        return
-            AccountingLib.calculateAccrued(
-                stream.ratePerSecond,
+        AccountingLib.AccrualResult memory accrual = AccountingLib
+            .calculateAccrual(
+                stream.totalAmount,
+                stream.claimedAmount,
                 stream.startTime,
+                stream.duration,
+                stream.lastClaimed,
                 stream.stopTime,
-                stream.lastClaimed
+                block.timestamp
             );
+        return accrual.claimable;
     }
 
     function getStream(uint256 streamId) external view returns (Stream memory) {

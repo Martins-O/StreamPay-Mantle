@@ -2,35 +2,55 @@
 pragma solidity ^0.8.30;
 
 library AccountingLib {
-    function calculateAccrued(
-        uint256 ratePerSecond,
-        uint256 startTime,
-        uint256 stopTime,
-        uint256 lastClaimed
-    ) internal view returns (uint256) {
-        if (block.timestamp <= lastClaimed) {
-            return 0;
-        }
-
-        uint256 currentTime = block.timestamp;
-        uint256 effectiveStopTime = stopTime == 0 ? currentTime :
-            (stopTime < currentTime ? stopTime : currentTime);
-
-        uint256 effectiveStartTime = lastClaimed > startTime ? lastClaimed : startTime;
-
-        if (effectiveStopTime <= effectiveStartTime) {
-            return 0;
-        }
-
-        uint256 elapsedTime = effectiveStopTime - effectiveStartTime;
-        return ratePerSecond * elapsedTime;
+    struct AccrualResult {
+        uint256 claimable;
+        uint256 accrualPoint;
     }
 
-    function calculateRatePerSecond(
+    function calculateAccrual(
         uint256 totalAmount,
-        uint256 duration
-    ) internal pure returns (uint256) {
-        require(duration > 0, "Duration must be greater than zero");
-        return totalAmount / duration;
+        uint256 claimedAmount,
+        uint256 startTime,
+        uint256 duration,
+        uint256 lastClaimed,
+        uint256 stopTime,
+        uint256 timestamp
+    ) internal pure returns (AccrualResult memory) {
+        if (duration == 0) {
+            return AccrualResult({claimable: 0, accrualPoint: lastClaimed});
+        }
+
+        if (timestamp <= lastClaimed) {
+            return AccrualResult({claimable: 0, accrualPoint: lastClaimed});
+        }
+
+        uint256 streamEndTime = startTime + duration;
+        uint256 effectiveTime = timestamp;
+
+        if (stopTime != 0 && stopTime < effectiveTime) {
+            effectiveTime = stopTime;
+        }
+
+        if (effectiveTime > streamEndTime) {
+            effectiveTime = streamEndTime;
+        }
+
+        if (effectiveTime <= lastClaimed) {
+            return AccrualResult({claimable: 0, accrualPoint: effectiveTime});
+        }
+
+        uint256 elapsed = effectiveTime - startTime;
+        if (elapsed > duration) {
+            elapsed = duration;
+        }
+
+        uint256 totalStreamed = (totalAmount * elapsed) / duration;
+
+        if (totalStreamed <= claimedAmount) {
+            return AccrualResult({claimable: 0, accrualPoint: effectiveTime});
+        }
+
+        uint256 claimable = totalStreamed - claimedAmount;
+        return AccrualResult({claimable: claimable, accrualPoint: effectiveTime});
     }
 }

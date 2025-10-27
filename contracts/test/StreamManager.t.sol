@@ -66,8 +66,9 @@ contract StreamManagerTest is Test {
         assertEq(stream.recipient, recipient);
         assertEq(stream.token, address(token));
         assertEq(stream.totalAmount, totalAmount);
-        assertEq(stream.ratePerSecond, totalAmount / duration);
+        assertEq(stream.claimedAmount, 0);
         assertEq(stream.startTime, block.timestamp);
+        assertEq(stream.duration, duration);
         assertEq(stream.stopTime, 0);
         assertEq(stream.lastClaimed, block.timestamp);
         assertTrue(stream.isActive);
@@ -111,7 +112,7 @@ contract StreamManagerTest is Test {
         // Fast forward 10 seconds
         vm.warp(block.timestamp + 10);
 
-        uint256 expectedAmount = (totalAmount / duration) * 10; // 10 seconds worth
+        uint256 expectedAmount = (totalAmount * 10) / duration; // 10 seconds worth
         uint256 streamableAmount = streamManager.getStreamableAmount(streamId);
         assertEq(streamableAmount, expectedAmount);
 
@@ -128,6 +129,7 @@ contract StreamManagerTest is Test {
         // Check stream state updated
         StreamManager.Stream memory stream = streamManager.getStream(streamId);
         assertEq(stream.lastClaimed, block.timestamp);
+        assertEq(stream.claimedAmount, expectedAmount);
     }
 
     function testClaimStreamNotRecipient() public {
@@ -161,7 +163,7 @@ contract StreamManagerTest is Test {
         // Fast forward 10 seconds
         vm.warp(block.timestamp + 10);
 
-        uint256 expectedClaimAmount = (totalAmount / duration) * 10;
+        uint256 expectedClaimAmount = (totalAmount * 10) / duration;
         uint256 expectedRefundAmount = totalAmount - expectedClaimAmount;
 
         uint256 senderBalanceBefore = token.balanceOf(sender);
@@ -180,6 +182,7 @@ contract StreamManagerTest is Test {
         StreamManager.Stream memory stream = streamManager.getStream(streamId);
         assertFalse(stream.isActive);
         assertEq(stream.stopTime, block.timestamp);
+        assertEq(stream.claimedAmount, expectedClaimAmount);
     }
 
     function testCancelStreamNotSender() public {
@@ -244,6 +247,10 @@ contract StreamManagerTest is Test {
 
         // Should have no more streamable amount
         assertEq(streamManager.getStreamableAmount(streamId), 0);
+
+        StreamManager.Stream memory stream = streamManager.getStream(streamId);
+        assertFalse(stream.isActive);
+        assertEq(stream.claimedAmount, totalAmount);
     }
 
     function testPauseUnpause() public {

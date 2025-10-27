@@ -4,143 +4,157 @@ pragma solidity ^0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {AccountingLib} from "../src/AccountingLib.sol";
 
-contract TestContract {
-    function calculateRatePerSecond(uint256 totalAmount, uint256 duration) external pure returns (uint256) {
-        return AccountingLib.calculateRatePerSecond(totalAmount, duration);
+contract AccountingLibHarness {
+    function calculateAccrual(
+        uint256 totalAmount,
+        uint256 claimedAmount,
+        uint256 startTime,
+        uint256 duration,
+        uint256 lastClaimed,
+        uint256 stopTime,
+        uint256 timestamp
+    ) external pure returns (AccountingLib.AccrualResult memory) {
+        return AccountingLib.calculateAccrual(
+            totalAmount,
+            claimedAmount,
+            startTime,
+            duration,
+            lastClaimed,
+            stopTime,
+            timestamp
+        );
     }
 }
 
 contract AccountingLibTest is Test {
-    using AccountingLib for uint256;
-
-    TestContract testContract;
+    AccountingLibHarness private harness;
 
     function setUp() public {
-        testContract = new TestContract();
+        harness = new AccountingLibHarness();
     }
 
-    function testCalculateAccrued() public {
-        uint256 ratePerSecond = 1e6; // 1 token per second
-        uint256 startTime = 1000;
-        uint256 stopTime = 0; // No stop time
-        uint256 lastClaimed = 1000;
+    function testAccrualBasic() public view {
+        uint256 totalAmount = 1_000 ether;
+        uint256 claimedAmount = 0;
+        uint256 startTime = 1_000;
+        uint256 duration = 100;
+        uint256 timestamp = startTime + 10;
 
-        // Set current time to 1010 (10 seconds later)
-        vm.warp(1010);
+        AccountingLib.AccrualResult memory result = harness.calculateAccrual(
+            totalAmount,
+            claimedAmount,
+            startTime,
+            duration,
+            startTime,
+            0,
+            timestamp
+        );
 
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        assertEq(accrued, 10 * 1e6); // 10 seconds * 1 token per second
+        uint256 expectedClaimable = (totalAmount * 10) / duration;
+        assertEq(result.claimable, expectedClaimable);
+        assertEq(result.accrualPoint, timestamp);
     }
 
-    function testCalculateAccruedWithStopTime() public {
-        uint256 ratePerSecond = 1e6;
-        uint256 startTime = 1000;
-        uint256 stopTime = 1005; // Stream stopped after 5 seconds
-        uint256 lastClaimed = 1000;
+    function testAccrualRespectsClaimedAmount() public view {
+        uint256 totalAmount = 1_000 ether;
+        uint256 claimedAmount = 300 ether;
+        uint256 startTime = 1_000;
+        uint256 duration = 100;
+        uint256 timestamp = startTime + 50;
 
-        // Set current time to 1010 (past stop time)
-        vm.warp(1010);
+        AccountingLib.AccrualResult memory result = harness.calculateAccrual(
+            totalAmount,
+            claimedAmount,
+            startTime,
+            duration,
+            startTime + 30,
+            0,
+            timestamp
+        );
 
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        assertEq(accrued, 5 * 1e6); // Only 5 seconds should be counted
+        uint256 totalStreamed = (totalAmount * 50) / duration;
+        assertEq(result.claimable, totalStreamed - claimedAmount);
+        assertEq(result.accrualPoint, timestamp);
     }
 
-    function testCalculateAccruedAlreadyClaimed() public {
-        uint256 ratePerSecond = 1e6;
-        uint256 startTime = 1000;
-        uint256 stopTime = 0;
-        uint256 lastClaimed = 1010; // Already claimed up to this point
+    function testAccrualCapsAtStopTime() public view {
+        uint256 totalAmount = 1_000 ether;
+        uint256 claimedAmount = 0;
+        uint256 startTime = 1_000;
+        uint256 duration = 100;
+        uint256 stopTime = startTime + 25;
+        uint256 timestamp = startTime + 50;
 
-        // Set current time to 1005 (before last claimed)
-        vm.warp(1005);
+        AccountingLib.AccrualResult memory result = harness.calculateAccrual(
+            totalAmount,
+            claimedAmount,
+            startTime,
+            duration,
+            startTime,
+            stopTime,
+            timestamp
+        );
 
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        assertEq(accrued, 0); // Nothing should be claimable
+        uint256 expectedStreamed = (totalAmount * 25) / duration;
+        assertEq(result.claimable, expectedStreamed);
+        assertEq(result.accrualPoint, stopTime);
     }
 
-    function testCalculateAccruedPartialClaim() public {
-        uint256 ratePerSecond = 1e6;
-        uint256 startTime = 1000;
-        uint256 stopTime = 0;
-        uint256 lastClaimed = 1005; // Claimed up to 5 seconds
+    function testAccrualCapsAtEndOfStream() public view {
+        uint256 totalAmount = 1_000 ether;
+        uint256 claimedAmount = 0;
+        uint256 startTime = 1_000;
+        uint256 duration = 100;
+        uint256 timestamp = startTime + 1_000;
 
-        // Set current time to 1010
-        vm.warp(1010);
+        AccountingLib.AccrualResult memory result = harness.calculateAccrual(
+            totalAmount,
+            claimedAmount,
+            startTime,
+            duration,
+            startTime,
+            0,
+            timestamp
+        );
 
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        assertEq(accrued, 5 * 1e6); // Should get 5 more seconds worth
+        assertEq(result.claimable, totalAmount);
+        assertEq(result.accrualPoint, startTime + duration);
     }
 
-    function testCalculateAccruedZeroRate() public {
-        uint256 ratePerSecond = 0;
-        uint256 startTime = 1000;
-        uint256 stopTime = 0;
-        uint256 lastClaimed = 1000;
+    function testAccrualNoNewAmountWhenTimestampBeforeLastClaimed() public view {
+        uint256 totalAmount = 1_000 ether;
+        uint256 claimedAmount = 400 ether;
+        uint256 startTime = 1_000;
+        uint256 duration = 100;
+        uint256 lastClaimed = startTime + 60;
+        uint256 timestamp = startTime + 50;
 
-        vm.warp(1010);
+        AccountingLib.AccrualResult memory result = harness.calculateAccrual(
+            totalAmount,
+            claimedAmount,
+            startTime,
+            duration,
+            lastClaimed,
+            0,
+            timestamp
+        );
 
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        assertEq(accrued, 0);
+        assertEq(result.claimable, 0);
+        assertEq(result.accrualPoint, lastClaimed);
     }
 
-    function testCalculateRatePerSecond() public {
-        uint256 totalAmount = 3600 * 1e6; // 3600 tokens
-        uint256 duration = 3600; // 1 hour in seconds
+    function testAccrualHandlesZeroDuration() public view {
+        AccountingLib.AccrualResult memory result = harness.calculateAccrual(
+            1_000 ether,
+            0,
+            1_000,
+            0,
+            1_000,
+            0,
+            2_000
+        );
 
-        uint256 rate = AccountingLib.calculateRatePerSecond(totalAmount, duration);
-        assertEq(rate, 1e6); // 1 token per second
-    }
-
-    function testCalculateRatePerSecondRounding() public {
-        uint256 totalAmount = 100 * 1e6; // 100 tokens
-        uint256 duration = 3; // 3 seconds
-
-        uint256 rate = AccountingLib.calculateRatePerSecond(totalAmount, duration);
-        assertEq(rate, 33333333); // Truncated division: 100000000 / 3 = 33333333
-    }
-
-    function testCalculateRatePerSecondZeroDuration() public {
-        uint256 totalAmount = 1000 * 1e6;
-        uint256 duration = 0;
-
-        vm.expectRevert(bytes("Duration must be greater than zero"));
-        testContract.calculateRatePerSecond(totalAmount, duration);
-    }
-
-    function testCalculateAccruedComplexScenario() public {
-        uint256 ratePerSecond = 578703; // Irregular rate
-        uint256 startTime = 1682000000; // Some timestamp
-        uint256 stopTime = 0;
-        uint256 lastClaimed = startTime + 123; // Claimed after 123 seconds
-
-        vm.warp(startTime + 456); // Current time is 456 seconds after start
-
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        uint256 expectedAccrued = ratePerSecond * (456 - 123); // 333 seconds worth
-        assertEq(accrued, expectedAccrued);
-    }
-
-    function testCalculateAccruedEdgeCases() public {
-        uint256 ratePerSecond = 1;
-        uint256 startTime = 1000;
-        uint256 stopTime = 1000; // Stop time equals start time
-        uint256 lastClaimed = 1000;
-
-        vm.warp(1010);
-
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        assertEq(accrued, 0); // No time elapsed between start and stop
-    }
-
-    function testCalculateAccruedLastClaimedAfterStart() public {
-        uint256 ratePerSecond = 1e6;
-        uint256 startTime = 1000;
-        uint256 stopTime = 0;
-        uint256 lastClaimed = 1005; // Last claimed after start
-
-        vm.warp(1015);
-
-        uint256 accrued = AccountingLib.calculateAccrued(ratePerSecond, startTime, stopTime, lastClaimed);
-        assertEq(accrued, 10 * 1e6); // From 1005 to 1015 = 10 seconds
+        assertEq(result.claimable, 0);
+        assertEq(result.accrualPoint, 1_000);
     }
 }

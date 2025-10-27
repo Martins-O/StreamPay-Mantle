@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Teal Green Theme - Dark Mode with Better Contrast */
+    --background: 168 60% 6%;
+    --foreground: 160 10% 98%;
+
+    --card: 168 50% 10%;
+    --card-foreground: 160 10% 98%;
+
+    --popover: 168 50% 10%;
+    --popover-foreground: 160 10% 98%;
+
+    --primary: 166 90% 50%;
+    --primary-foreground: 168 60% 8%;
+
+    --secondary: 176 75% 40%;
+    --secondary-foreground: 160 10% 98%;
+
+    --muted: 168 40% 18%;
+    --muted-foreground: 165 15% 70%;
+
+    --accent: 166 90% 50%;
+    --accent-foreground: 168 60% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 160 10% 98%;
+
+    --border: 168 40% 18%;
+    --input: 168 40% 18%;
+    --ring: 166 90% 50%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens for StreamPay - Enhanced Visibility */
+    --gradient-primary: linear-gradient(135deg, hsl(166, 90%, 50%), hsl(176, 75%, 40%));
+    --gradient-dark: linear-gradient(180deg, hsl(168, 60%, 6%), hsl(168, 50%, 10%));
+    --glow-cyan: 0 0 30px hsl(166, 90%, 50% / 0.6);
+    --glow-purple: 0 0 30px hsl(176, 75%, 40% / 0.6);
+    --glass-bg: hsl(168, 50%, 10% / 0.85);
+    --glass-border: hsl(166, 90%, 50% / 0.3);
+
+    --sidebar-background: 168 60% 8%;
+    --sidebar-foreground: 160 10% 98%;
+    --sidebar-primary: 166 90% 50%;
+    --sidebar-primary-foreground: 168 60% 8%;
+    --sidebar-accent: 168 40% 18%;
+    --sidebar-accent-foreground: 160 10% 98%;
+    --sidebar-border: 168 40% 18%;
+    --sidebar-ring: 166 90% 50%;
+  }
+
+  .light {
+    --background: 160 20% 97%;
+    --foreground: 168 80% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 168 80% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 168 80% 10%;
+
+    --primary: 166 80% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 176 70% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 160 25% 94%;
+    --muted-foreground: 168 30% 35%;
+
+    --accent: 166 80% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 160 25% 86%;
+    --input: 160 25% 86%;
+    --ring: 166 80% 42%;
+
+    --glass-bg: hsl(0, 0%, 100% / 0.9);
+    --glass-border: hsl(166, 80%, 42% / 0.3);
+    --gradient-primary: linear-gradient(135deg, hsl(166, 80%, 42%), hsl(176, 70%, 45%));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .glow-cyan {
+    box-shadow: var(--glow-cyan);
+  }
+
+  .glow-purple {
+    box-shadow: var(--glow-purple);
+  }
+
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: brightness(1.1);
+  }
+
+  .animated-gradient {
+    background: var(--gradient-primary);
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    color: hsl(168, 60%, 6%);
+    font-weight: 600;
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
