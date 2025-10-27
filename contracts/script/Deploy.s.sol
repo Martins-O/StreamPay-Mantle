@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "forge-std/Script.sol";
-import "../src/StreamManager.sol";
-import "../src/MockERC20.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {StreamManager} from "../src/StreamManager.sol";
+import {MockERC20} from "../src/MockERC20.sol";
 
 contract DeployScript is Script {
     function run() external {
@@ -24,14 +24,14 @@ contract DeployScript is Script {
 
         // Log deployment addresses
         console.log("StreamManager deployed to:", address(streamManager));
-        console.log("StreamVault deployed to:", address(streamManager.vault()));
+        console.log("StreamVault deployed to:", address(streamManager.VAULT()));
         console.log("Mock USDT deployed to:", address(mockUSDT));
 
         // Save deployment info to a file
         string memory deploymentInfo = string(
             abi.encodePacked(
                 "STREAM_MANAGER_ADDRESS=", vm.toString(address(streamManager)), "\n",
-                "STREAM_VAULT_ADDRESS=", vm.toString(address(streamManager.vault())), "\n",
+                "STREAM_VAULT_ADDRESS=", vm.toString(address(streamManager.VAULT())), "\n",
                 "MOCK_USDT_ADDRESS=", vm.toString(address(mockUSDT)), "\n"
             )
         );

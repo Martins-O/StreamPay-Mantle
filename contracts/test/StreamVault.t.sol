@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "forge-std/Test.sol";
-import "../src/StreamVault.sol";
-import "../src/MockERC20.sol";
+import {Test} from "forge-std/Test.sol";
+import {StreamVault} from "../src/StreamVault.sol";
+import {MockERC20} from "../src/MockERC20.sol";
 
 contract StreamVaultTest is Test {
     StreamVault public vault;

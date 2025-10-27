@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "forge-std/Test.sol";
-import "../src/AccountingLib.sol";
+import {Test} from "forge-std/Test.sol";
+import {AccountingLib} from "../src/AccountingLib.sol";
 
 contract TestContract {
     function calculateRatePerSecond(uint256 totalAmount, uint256 duration) external pure returns (uint256) {

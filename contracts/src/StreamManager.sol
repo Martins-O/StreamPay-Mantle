@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./StreamVault.sol";
-import "./AccountingLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {StreamVault} from "./StreamVault.sol";
+import {AccountingLib} from "./AccountingLib.sol";
 
 contract StreamManager is ReentrancyGuard, Pausable, Ownable {
     using AccountingLib for uint256;
@@ -23,7 +23,7 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         bool isActive;
     }
 
-    StreamVault public immutable vault;
+    StreamVault public immutable VAULT;
     uint256 public streamCounter;
     mapping(uint256 => Stream) public streams;
     mapping(address => uint256[]) public senderStreams;
@@ -54,7 +54,7 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
     );
 
     constructor() Ownable(msg.sender) {
-        vault = new StreamVault();
+        VAULT = new StreamVault();
     }
 
     function createStream(
@@ -70,7 +70,10 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         require(duration > 0, "Duration must be greater than zero");
 
         uint256 streamId = ++streamCounter;
-        uint256 ratePerSecond = AccountingLib.calculateRatePerSecond(totalAmount, duration);
+        uint256 ratePerSecond = AccountingLib.calculateRatePerSecond(
+            totalAmount,
+            duration
+        );
 
         streams[streamId] = Stream({
             sender: msg.sender,
@@ -87,7 +90,10 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         senderStreams[msg.sender].push(streamId);
         recipientStreams[recipient].push(streamId);
 
-        IERC20(token).transferFrom(msg.sender, address(vault), totalAmount);
+        require(
+            IERC20(token).transferFrom(msg.sender, address(VAULT), totalAmount),
+            "Transfer failed"
+        );
 
         emit StreamCreated(
             streamId,
@@ -119,7 +125,7 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         stream.isActive = false;
 
         if (accruedAmount > 0) {
-            vault.withdraw(stream.token, stream.recipient, accruedAmount);
+            VAULT.withdraw(stream.token, stream.recipient, accruedAmount);
             stream.lastClaimed = block.timestamp;
         }
 
@@ -132,10 +138,15 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         uint256 remainingAmount = stream.totalAmount - totalStreamed;
 
         if (remainingAmount > 0) {
-            vault.withdraw(stream.token, stream.sender, remainingAmount);
+            VAULT.withdraw(stream.token, stream.sender, remainingAmount);
         }
 
-        emit StreamCanceled(streamId, stream.sender, stream.recipient, remainingAmount);
+        emit StreamCanceled(
+            streamId,
+            stream.sender,
+            stream.recipient,
+            remainingAmount
+        );
     }
 
     function claim(uint256 streamId) external nonReentrant {
@@ -153,34 +164,41 @@ contract StreamManager is ReentrancyGuard, Pausable, Ownable {
         require(accruedAmount > 0, "No amount to claim");
 
         stream.lastClaimed = block.timestamp;
-        vault.withdraw(stream.token, stream.recipient, accruedAmount);
+        VAULT.withdraw(stream.token, stream.recipient, accruedAmount);
 
         emit Claimed(streamId, stream.recipient, accruedAmount);
     }
 
-    function getStreamableAmount(uint256 streamId) external view returns (uint256) {
+    function getStreamableAmount(
+        uint256 streamId
+    ) external view returns (uint256) {
         Stream memory stream = streams[streamId];
         if (!stream.isActive) {
             return 0;
         }
 
-        return AccountingLib.calculateAccrued(
-            stream.ratePerSecond,
-            stream.startTime,
-            stream.stopTime,
-            stream.lastClaimed
-        );
+        return
+            AccountingLib.calculateAccrued(
+                stream.ratePerSecond,
+                stream.startTime,
+                stream.stopTime,
+                stream.lastClaimed
+            );
     }
 
     function getStream(uint256 streamId) external view returns (Stream memory) {
         return streams[streamId];
     }
 
-    function getSenderStreams(address sender) external view returns (uint256[] memory) {
+    function getSenderStreams(
+        address sender
+    ) external view returns (uint256[] memory) {
         return senderStreams[sender];
     }
 
-    function getRecipientStreams(address recipient) external view returns (uint256[] memory) {
+    function getRecipientStreams(
+        address recipient
+    ) external view returns (uint256[] memory) {
         return recipientStreams[recipient];
     }
 
