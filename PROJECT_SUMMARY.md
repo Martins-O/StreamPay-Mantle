@@ -19,7 +19,7 @@
 - Reentrancy protection and emergency pause functionality
 
 ### 2. Frontend Application (100% Complete)
-- ✅ **Next.js 15** application with TypeScript
+- ✅ **Vite + React 18** application with TypeScript
 - ✅ **Wagmi v2** for Web3 wallet integration
 - ✅ **Real-time streaming UI** with animated counters
 - ✅ **TailwindCSS** responsive design
@@ -59,7 +59,7 @@ StreamManager (Main Controller)
 
 ### Frontend Architecture
 ```
-Next.js App Router
+Vite SPA
 ├── Wagmi (Web3 Hooks)
 ├── Viem (Ethereum Client)
 ├── React Query (State Management)

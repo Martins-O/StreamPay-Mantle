@@ -8,6 +8,8 @@ import { config } from "./lib/web3";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import HowItWorks from "./pages/HowItWorks";
+import About from "./pages/About";
 import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +26,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/about" element={<About />} />
               <Route path="/docs" element={<Docs />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

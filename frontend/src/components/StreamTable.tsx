@@ -71,7 +71,7 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
   const handleBatchClaim = async () => {
     const claimableStreams = Array.from(selectedStreams).filter(id => {
       const stream = streams.find(s => s.id === id);
-      return stream && stream.receiver.toLowerCase() === userAddress.toLowerCase() && stream.isActive;
+      return stream && stream.recipient.toLowerCase() === userAddress.toLowerCase() && stream.isActive;
     });
 
     for (const streamId of claimableStreams) {
@@ -151,10 +151,12 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
 
       <AnimatePresence>
         {displayStreams.map((stream, index) => {
-          const isReceiver = stream.receiver.toLowerCase() === userAddress.toLowerCase();
+          const isReceiver = stream.recipient.toLowerCase() === userAddress.toLowerCase();
           const remaining = stream.totalAmount - stream.claimedAmount;
           const progress = calculateProgress(stream);
           const isSelected = selectedStreams.has(stream.id);
+          const tokenDecimals = stream.tokenDecimals ?? 18;
+          const tokenSymbol = stream.tokenSymbol ?? '';
 
           return (
             <motion.div
@@ -189,7 +191,7 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                           <p className="font-mono text-sm">
                             {isReceiver
                               ? `${stream.sender.slice(0, 6)}...${stream.sender.slice(-4)}`
-                              : `${stream.receiver.slice(0, 6)}...${stream.receiver.slice(-4)}`}
+                              : `${stream.recipient.slice(0, 6)}...${stream.recipient.slice(-4)}`}
                           </p>
                         </div>
                       </div>
@@ -198,18 +200,23 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                         <div>
                           <p className="text-muted-foreground">Rate/sec</p>
                           <p className="font-semibold">
-                            {formatTokenAmount(stream.totalAmount / stream.duration, 18)}
+                            {formatTokenAmount(stream.totalAmount / stream.duration, tokenDecimals)}
+                            {tokenSymbol ? ` ${tokenSymbol}` : ''}
                           </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Claimed</p>
                           <p className="font-semibold text-primary">
-                            {formatTokenAmount(stream.claimedAmount, 18)}
+                            {formatTokenAmount(stream.claimedAmount, tokenDecimals)}
+                            {tokenSymbol ? ` ${tokenSymbol}` : ''}
                           </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Remaining</p>
-                          <p className="font-semibold">{formatTokenAmount(remaining, 18)}</p>
+                          <p className="font-semibold">
+                            {formatTokenAmount(remaining, tokenDecimals)}
+                            {tokenSymbol ? ` ${tokenSymbol}` : ''}
+                          </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Status</p>
@@ -267,7 +274,7 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                     )}
                     <Button variant="outline" size="sm" asChild>
                       <a
-                        href={`https://explorer.testnet.mantle.xyz/address/${stream.tokenAddress}`}
+                        href={`https://explorer.testnet.mantle.xyz/address/${stream.token}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

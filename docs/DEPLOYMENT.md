@@ -58,15 +58,13 @@ cp .env.example .env.local
 Edit `.env.local`:
 
 ```bash
-# WalletConnect Project ID (get from cloud.walletconnect.com)
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
+# Contract addresses (populate after deployment)
+VITE_STREAM_MANAGER_ADDRESS=0x0000000000000000000000000000000000000000
+VITE_STREAM_VAULT_ADDRESS=0x0000000000000000000000000000000000000000
+VITE_MOCK_USDT_ADDRESS=0x0000000000000000000000000000000000000000
 
-# Contract addresses (will be filled after deployment)
-NEXT_PUBLIC_STREAM_MANAGER_ADDRESS=
-NEXT_PUBLIC_MOCK_USDT_ADDRESS=
-
-# RPC URLs
-NEXT_PUBLIC_MANTLE_TESTNET_RPC=https://rpc.testnet.mantle.xyz
+# Optional WalletConnect Project ID
+VITE_WALLETCONNECT_PROJECT_ID=
 ```
 
 ## Smart Contract Deployment
@@ -135,8 +133,13 @@ Mock USDT deployed to: 0x...
 Copy the deployed addresses to your frontend environment:
 
 ```bash
-# Copy addresses from deployment.env to frontend/.env.local
-cat contracts/deployment.env >> frontend/.env.local
+# Show the deployed addresses
+cat contracts/deployment.env
+
+# Copy the values into frontend/.env.local
+#   VITE_STREAM_MANAGER_ADDRESS=
+#   VITE_STREAM_VAULT_ADDRESS=
+#   VITE_MOCK_USDT_ADDRESS=
 ```
 
 ## Frontend Deployment
@@ -156,7 +159,9 @@ npm run dev
 
 # Production build
 npm run build
-npm start
+
+# Preview the production build locally
+npm run preview
 ```
 
 ### 3. Deploy to Hosting Platform
@@ -177,7 +182,7 @@ vercel --prod
 # Build the project
 npm run build
 
-# Deploy to Netlify (drag & drop .next folder)
+# Deploy to Netlify (upload the dist/ folder)
 # Or use Netlify CLI
 ```
 
@@ -187,8 +192,8 @@ npm run build
 # Build for static export
 npm run build
 
-# Upload to IPFS using your preferred method
-# (Pinata, Fleek, or local IPFS node)
+# Upload the contents of dist/ using your preferred method
+# (Pinata, Fleek, or a local IPFS node)
 ```
 
 ## Post-Deployment Verification
@@ -294,10 +299,10 @@ npm install
 #### Wallet Connection Issues
 ```bash
 # Check environment variables
-echo $NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+echo $VITE_WALLETCONNECT_PROJECT_ID
 
 # Verify contract addresses
-echo $NEXT_PUBLIC_STREAM_MANAGER_ADDRESS
+echo $VITE_STREAM_MANAGER_ADDRESS
 ```
 
 #### Contract Interaction Failures

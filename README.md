@@ -40,7 +40,7 @@ graph TB
 1. **StreamManager.sol** - Main contract handling stream lifecycle
 2. **StreamVault.sol** - Secure token escrow and withdrawal
 3. **AccountingLib.sol** - Pure math for streaming calculations
-4. **Frontend** - Next.js + Wagmi for wallet integration and real-time UI
+4. **Frontend** - Vite + React + Wagmi for wallet integration and real-time UI
 
 ## 🚀 Quick Start
 
@@ -77,7 +77,11 @@ forge test
 ```bash
 cd ../frontend
 cp .env.example .env.local
-# Add contract addresses from deployment
+# Populate contract addresses from deployment
+#   VITE_STREAM_MANAGER_ADDRESS=
+#   VITE_STREAM_VAULT_ADDRESS=
+#   VITE_MOCK_USDT_ADDRESS=
+# Optional: set VITE_WALLETCONNECT_PROJECT_ID for WalletConnect support
 
 npm install
 npm run dev
@@ -86,9 +90,9 @@ npm run dev
 ### 4. Access Application
 
 Open [http://localhost:3000](http://localhost:3000) and:
-1. Connect your wallet
+1. Connect your wallet (MetaMask, browser extension, or WalletConnect)
 2. Switch to Mantle testnet
-3. Get test tokens (use deployed mock USDT)
+3. Mint mock USDT using the deployed token contract
 4. Create your first stream!
 
 ## 📋 Features
@@ -107,7 +111,7 @@ Open [http://localhost:3000](http://localhost:3000) and:
   - Event emission for indexing
 
 - [x] **Frontend Interface**
-  - Wallet connection (MetaMask, WalletConnect)
+  - Wallet connection (MetaMask, WalletConnect QR, browser extensions)
   - Real-time animated counters
   - Stream visualization charts
   - Responsive design with Tailwind CSS

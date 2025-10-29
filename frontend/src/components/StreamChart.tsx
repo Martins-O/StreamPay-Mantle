@@ -13,16 +13,20 @@ const StreamChart = ({ stream }: StreamChartProps) => {
     const points = 20;
     const data = [];
     const duration = Number(stream.duration);
-    const totalAmount = Number(formatTokenAmount(stream.totalAmount, 18));
+    const decimals = stream.tokenDecimals ?? 18;
+    const totalAmount = parseFloat(formatTokenAmount(stream.totalAmount, decimals));
 
     for (let i = 0; i <= points; i++) {
       const progress = (i / points) * duration;
       const amount = (totalAmount * i) / points;
-      
+
       data.push({
         time: `${Math.floor(progress / 3600)}h`,
         amount: amount.toFixed(2),
-        claimed: i === points ? Number(formatTokenAmount(stream.claimedAmount, 18)).toFixed(2) : 0,
+        claimed:
+          i === points
+            ? parseFloat(formatTokenAmount(stream.claimedAmount, decimals)).toFixed(2)
+            : 0,
       });
     }
 

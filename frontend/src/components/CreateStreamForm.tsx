@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateStream } from '@/lib/hooks';
-import { useAccount } from 'wagmi';
+import { useAccount, usePublicClient } from 'wagmi';
 import { parseUnits } from 'viem';
 import { toast } from 'sonner';
 import { Rocket, ExternalLink } from 'lucide-react';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import TokenApproval from './TokenApproval';
 import StreamTemplates from './StreamTemplates';
+import { ERC20_ABI, IS_STREAM_MANAGER_CONFIGURED } from '@/lib/contract';
 
 interface CreateStreamFormProps {
   onSuccess: () => void;
@@ -37,8 +38,94 @@ const CreateStreamForm = ({ onSuccess, onTransactionSubmit }: CreateStreamFormPr
   const [needsApproval, setNeedsApproval] = useState(false);
   const [approvalComplete, setApprovalComplete] = useState(false);
   const [showTemplates, setShowTemplates] = useState(true);
+  const [tokenDecimals, setTokenDecimals] = useState<number | null>(null);
+  const [tokenSymbol, setTokenSymbol] = useState<string | undefined>();
+  const [isFetchingTokenInfo, setIsFetchingTokenInfo] = useState(false);
 
   const { createStream, isPending } = useCreateStream();
+  const publicClient = usePublicClient();
+
+  const isValidTokenAddress = useMemo(
+    () => /^0x[a-fA-F0-9]{40}$/.test(tokenAddress),
+    [tokenAddress],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchTokenInfo = async () => {
+      if (!publicClient || !isValidTokenAddress) {
+        if (!cancelled) {
+          setTokenDecimals(null);
+          setTokenSymbol(undefined);
+        }
+        return;
+      }
+
+      setIsFetchingTokenInfo(true);
+
+      try {
+        const [decimalsResult, symbolResult] = await Promise.all([
+          publicClient.readContract({
+            address: tokenAddress as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'decimals',
+          }) as Promise<bigint | number>,
+          publicClient.readContract({
+            address: tokenAddress as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'symbol',
+          }).catch(() => ''),
+        ]);
+
+        if (!cancelled) {
+          const decimals =
+            typeof decimalsResult === 'bigint'
+              ? Number(decimalsResult)
+              : typeof decimalsResult === 'number'
+                ? decimalsResult
+                : 18;
+          setTokenDecimals(Number.isFinite(decimals) ? decimals : 18);
+          setTokenSymbol(
+            typeof symbolResult === 'string' && symbolResult.length > 0
+              ? symbolResult
+              : undefined,
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTokenDecimals(18);
+          setTokenSymbol(undefined);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsFetchingTokenInfo(false);
+        }
+      }
+    };
+
+    fetchTokenInfo();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, tokenAddress, isValidTokenAddress]);
+
+  const resolvedTokenDecimals = tokenDecimals ?? 18;
+
+  if (!IS_STREAM_MANAGER_CONFIGURED) {
+    return (
+      <Card className="glass-card p-6">
+        <div className="space-y-3 text-sm text-muted-foreground">
+          <p className="font-semibold text-foreground">Stream manager contract not configured</p>
+          <p>
+            Please set <code className="font-mono">VITE_STREAM_MANAGER_ADDRESS</code> in your frontend
+            environment (see <code className="font-mono">frontend/.env.example</code>) and restart the app.
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   const handleTemplateSelect = (templateDuration: number, templateUnit: 'seconds' | 'minutes' | 'hours' | 'days') => {
     setDuration(templateDuration.toString());
@@ -57,8 +144,13 @@ const CreateStreamForm = ({ onSuccess, onTransactionSubmit }: CreateStreamFormPr
       return;
     }
 
-    if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
+    if (!isValidTokenAddress) {
       toast.error('Invalid token address');
+      return;
+    }
+
+    if (isFetchingTokenInfo) {
+      toast('Fetching token details, please try again in a moment');
       return;
     }
 
@@ -67,6 +159,11 @@ const CreateStreamForm = ({ onSuccess, onTransactionSubmit }: CreateStreamFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!IS_STREAM_MANAGER_CONFIGURED) {
+      toast.error('Stream manager contract is not configured.');
+      return;
+    }
 
     if (!approvalComplete) {
       checkApproval();
@@ -79,7 +176,7 @@ const CreateStreamForm = ({ onSuccess, onTransactionSubmit }: CreateStreamFormPr
     }
 
     try {
-      const totalAmount = parseUnits(amount, 18);
+      const totalAmount = parseUnits(amount, resolvedTokenDecimals);
       let durationInSeconds = BigInt(duration);
 
       // Convert to seconds based on time unit
@@ -165,7 +262,7 @@ const CreateStreamForm = ({ onSuccess, onTransactionSubmit }: CreateStreamFormPr
             {needsApproval && address && tokenAddress && amount && (
               <TokenApproval
                 tokenAddress={tokenAddress as `0x${string}`}
-                amount={parseUnits(amount, 18)}
+                amount={parseUnits(amount, resolvedTokenDecimals)}
                 userAddress={address}
                 onApprovalComplete={() => setApprovalComplete(true)}
               />
@@ -198,6 +295,14 @@ const CreateStreamForm = ({ onSuccess, onTransactionSubmit }: CreateStreamFormPr
                 </Select>
               </div>
             </div>
+
+            {isValidTokenAddress && (
+              <div className="text-xs text-muted-foreground">
+                {isFetchingTokenInfo
+                  ? 'Loading token information...'
+                  : `Using ${resolvedTokenDecimals} decimals${tokenSymbol ? ` (${tokenSymbol})` : ''}`}
+              </div>
+            )}
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button

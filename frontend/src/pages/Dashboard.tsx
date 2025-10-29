@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Wallet, TrendingUp, Activity, History } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Wallet, TrendingUp, Activity, History, ShieldAlert, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import StreamTable from '@/components/StreamTable';
 import CreateStreamForm from '@/components/CreateStreamForm';
@@ -13,6 +13,8 @@ import TransactionTracker from '@/components/TransactionTracker';
 import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import { useStreams, formatTokenAmount } from '@/lib/hooks';
+import { toast } from 'sonner';
+import { IS_STREAM_MANAGER_CONFIGURED } from '@/lib/contract';
 
 interface Transaction {
   hash: `0x${string}`;
@@ -21,22 +23,18 @@ interface Transaction {
 }
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const { address, isConnected } = useAccount();
-  const { streams, isLoading, refetch } = useStreams(address);
+  const { connectAsync, connectors, isPending: isConnecting, pendingConnector, error: connectError } = useConnect();
+  const { streams, isLoading, error, refetch } = useStreams(address);
   const [totalStreamed, setTotalStreamed] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    if (!isConnected) {
-      navigate('/');
-    }
-  }, [isConnected, navigate]);
-
-  useEffect(() => {
     if (streams.length > 0) {
       const total = streams.reduce((acc, stream) => {
-        return acc + Number(formatTokenAmount(stream.claimedAmount, 18));
+        const decimals = stream.tokenDecimals ?? 18;
+        const claimed = parseFloat(formatTokenAmount(stream.claimedAmount, decimals));
+        return acc + (Number.isFinite(claimed) ? claimed : 0);
       }, 0);
       setTotalStreamed(total);
     }
@@ -58,7 +56,80 @@ const Dashboard = () => {
   };
 
   if (!isConnected) {
-    return null;
+    const handleConnectorSelect = async (connector: (typeof connectors)[number]) => {
+      try {
+        await connectAsync({ connector });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to connect wallet');
+      }
+    };
+
+    return (
+      <div className="min-h-screen">
+        <AnimatedBackground />
+        <Navbar />
+
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-md w-full"
+          >
+            <Card className="glass-card p-12 text-center space-y-6">
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <ShieldAlert className="h-10 w-10 text-primary" />
+              </div>
+
+              <h2 className="text-2xl font-bold">Connect Your Wallet</h2>
+
+              <p className="text-muted-foreground">
+                Please connect your wallet to access the StreamPay dashboard and manage your payment streams.
+              </p>
+
+              <div className="space-y-2">
+                {connectors.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No wallet connectors available. Please refresh or check your configuration.
+                  </p>
+                )}
+
+                {connectors.map((connector) => {
+                  const isUnavailable = !connector.ready;
+                  const isLoading = isConnecting && pendingConnector?.id === connector.id;
+
+                  return (
+                    <Button
+                      key={connector.id}
+                      onClick={() => handleConnectorSelect(connector)}
+                      disabled={isUnavailable || isLoading}
+                      className="w-full"
+                      size="lg"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      ) : (
+                        <Wallet className="mr-2 h-5 w-5" />
+                      )}
+                      {connector.name}
+                      {isUnavailable ? ' (Unavailable)' : ''}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {connectError && (
+                <p className="text-xs text-destructive">
+                  {connectError.message || 'Failed to connect wallet. Try another option.'}
+                </p>
+              )}
+            </Card>
+          </motion.div>
+        </div>
+
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -126,6 +197,21 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
+            {(!IS_STREAM_MANAGER_CONFIGURED || error) && (
+              <Card className="glass-card p-4 border-yellow-500/30 bg-yellow-500/5 mb-6">
+                <p className="text-sm text-foreground font-semibold mb-1">
+                  {IS_STREAM_MANAGER_CONFIGURED
+                    ? 'Unable to fetch streams'
+                    : 'Stream manager contract not configured'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {IS_STREAM_MANAGER_CONFIGURED
+                    ? error?.message ?? 'Please try again later.'
+                    : 'Set VITE_STREAM_MANAGER_ADDRESS (and related addresses) in your environment, then reload.'}
+                </p>
+              </Card>
+            )}
+
             <Tabs defaultValue="streams" className="space-y-6">
               <TabsList className="glass-card border border-border/50 p-1 grid grid-cols-4 w-full">
                 <TabsTrigger value="streams" className="data-[state=active]:bg-primary/20">

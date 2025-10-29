@@ -7,12 +7,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Book, Code, Wallet, Zap, ExternalLink, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { STREAM_MANAGER_ADDRESS, IS_STREAM_MANAGER_CONFIGURED } from '@/lib/contract';
 
 const Docs = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
   };
+
+  const managerAddressDisplay = IS_STREAM_MANAGER_CONFIGURED
+    ? `${STREAM_MANAGER_ADDRESS.slice(0, 6)}...${STREAM_MANAGER_ADDRESS.slice(-4)}`
+    : 'Not configured';
 
   return (
     <div className="min-h-screen pb-20">
@@ -70,7 +75,7 @@ const Docs = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Chain ID:</span>
-                        <span>5001</span>
+                        <span>5003</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Currency:</span>
@@ -121,11 +126,14 @@ const Docs = () => {
                     </p>
                     <Card className="bg-background/50 p-4">
                       <div className="flex items-center justify-between">
-                        <code className="text-xs font-mono">0x0000...0000</code>
+                        <code className="text-xs font-mono">{managerAddressDisplay}</code>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyToClipboard('0x0000000000000000000000000000000000000000')}
+                          disabled={!IS_STREAM_MANAGER_CONFIGURED}
+                          onClick={() =>
+                            IS_STREAM_MANAGER_CONFIGURED && copyToClipboard(STREAM_MANAGER_ADDRESS)
+                          }
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
@@ -137,11 +145,11 @@ const Docs = () => {
                     <h3 className="font-semibold text-lg mb-2">Key Functions</h3>
                     <div className="space-y-2">
                       <Card className="bg-background/50 p-3">
-                        <code className="text-xs font-mono">createStream(receiver, token, amount, duration)</code>
+                        <code className="text-xs font-mono">createStream(recipient, token, amount, duration)</code>
                         <p className="text-xs text-muted-foreground mt-1">Create a new payment stream</p>
                       </Card>
                       <Card className="bg-background/50 p-3">
-                        <code className="text-xs font-mono">claimStream(streamId)</code>
+                        <code className="text-xs font-mono">claim(streamId)</code>
                         <p className="text-xs text-muted-foreground mt-1">Claim available tokens from a stream</p>
                       </Card>
                       <Card className="bg-background/50 p-3">
@@ -149,8 +157,16 @@ const Docs = () => {
                         <p className="text-xs text-muted-foreground mt-1">Cancel an active stream</p>
                       </Card>
                       <Card className="bg-background/50 p-3">
-                        <code className="text-xs font-mono">getStreamsByAddress(user)</code>
-                        <p className="text-xs text-muted-foreground mt-1">Get all streams for an address</p>
+                        <code className="text-xs font-mono">getStream(streamId)</code>
+                        <p className="text-xs text-muted-foreground mt-1">Inspect a specific stream</p>
+                      </Card>
+                      <Card className="bg-background/50 p-3">
+                        <code className="text-xs font-mono">getSenderStreams(address)</code>
+                        <p className="text-xs text-muted-foreground mt-1">List stream IDs created by an address</p>
+                      </Card>
+                      <Card className="bg-background/50 p-3">
+                        <code className="text-xs font-mono">getRecipientStreams(address)</code>
+                        <p className="text-xs text-muted-foreground mt-1">List stream IDs where the address is recipient</p>
                       </Card>
                     </div>
                   </div>
@@ -211,6 +227,31 @@ const config = createConfig({
                   </div>
 
                   <div>
+                    <h3 className="font-semibold text-lg mb-2">Configure Environment</h3>
+                    <Card className="bg-background/50 p-4 space-y-2 text-xs font-mono">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_STREAM_MANAGER_ADDRESS</span>
+                        <span>0x...</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_STREAM_VAULT_ADDRESS</span>
+                        <span>0x...</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_MOCK_USDT_ADDRESS</span>
+                        <span>0x...</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_WALLETCONNECT_PROJECT_ID</span>
+                        <span>Optional</span>
+                      </div>
+                    </Card>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      The app runs in read-only mode if these addresses are not set.
+                    </p>
+                  </div>
+
+                  <div>
                     <h3 className="font-semibold text-lg mb-2">Example: Create Stream</h3>
                     <Card className="bg-background/50 p-4">
                       <pre className="text-xs font-mono overflow-x-auto">
@@ -220,7 +261,7 @@ await writeContractAsync({
   address: STREAM_MANAGER_ADDRESS,
   abi: STREAM_MANAGER_ABI,
   functionName: 'createStream',
-  args: [receiver, token, amount, duration]
+  args: [recipient, token, amount, duration]
 })`}
                       </pre>
                     </Card>

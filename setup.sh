@@ -190,14 +190,12 @@ if [ ! -f .env.local ]; then
 # Frontend Environment Variables
 
 # WalletConnect Project ID
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=$WALLETCONNECT_PROJECT_ID
+VITE_WALLETCONNECT_PROJECT_ID=$WALLETCONNECT_PROJECT_ID
 
 # Contract Addresses (will be populated after deployment)
-NEXT_PUBLIC_STREAM_MANAGER_ADDRESS=
-NEXT_PUBLIC_MOCK_USDT_ADDRESS=
-
-# RPC URLs
-NEXT_PUBLIC_MANTLE_TESTNET_RPC=https://rpc.testnet.mantle.xyz
+VITE_STREAM_MANAGER_ADDRESS=
+VITE_STREAM_VAULT_ADDRESS=
+VITE_MOCK_USDT_ADDRESS=
 EOF
 
     # Copy contract addresses if they exist
@@ -206,8 +204,13 @@ EOF
         echo "# Deployed Contract Addresses" >> .env.local
 
         # Transform contract addresses for frontend
-        sed 's/STREAM_MANAGER_ADDRESS=/NEXT_PUBLIC_STREAM_MANAGER_ADDRESS=/' ../contracts/deployment.env >> .env.local
-        sed 's/MOCK_USDT_ADDRESS=/NEXT_PUBLIC_MOCK_USDT_ADDRESS=/' ../contracts/deployment.env >> .env.local
+        while IFS= read -r line; do
+            case "$line" in
+                STREAM_MANAGER_ADDRESS=*) echo "VITE_STREAM_MANAGER_ADDRESS=${line#*=}" >> .env.local ;;
+                STREAM_VAULT_ADDRESS=*) echo "VITE_STREAM_VAULT_ADDRESS=${line#*=}" >> .env.local ;;
+                MOCK_USDT_ADDRESS=*) echo "VITE_MOCK_USDT_ADDRESS=${line#*=}" >> .env.local ;;
+            esac
+        done < ../contracts/deployment.env
     fi
 
     echo -e "${GREEN}✅ Frontend environment configured${NC}"
@@ -233,7 +236,7 @@ echo "============================================"
 
 echo -e "${BLUE}📁 Project Structure:${NC}"
 echo "  📂 contracts/     - Smart contracts and deployment scripts"
-echo "  📂 frontend/      - Next.js web application"
+echo "  📂 frontend/      - Vite + React web application"
 echo "  📂 docs/          - Documentation and guides"
 
 echo -e "${BLUE}🚀 Next Steps:${NC}"

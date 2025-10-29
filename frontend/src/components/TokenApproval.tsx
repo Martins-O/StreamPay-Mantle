@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useReadContract, useWriteContract } from 'wagmi';
-import { STREAM_MANAGER_ADDRESS } from '@/lib/contract';
-import { parseUnits, formatUnits } from 'viem';
+import { STREAM_MANAGER_ADDRESS, ZERO_ADDRESS } from '@/lib/contract';
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +46,9 @@ const TokenApproval = ({ tokenAddress, amount, userAddress, onApprovalComplete }
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: [userAddress, STREAM_MANAGER_ADDRESS],
+    query: {
+      enabled: STREAM_MANAGER_ADDRESS !== ZERO_ADDRESS,
+    },
   });
 
   const { writeContractAsync, isPending } = useWriteContract();
@@ -89,6 +91,16 @@ const TokenApproval = ({ tokenAddress, amount, userAddress, onApprovalComplete }
             <p className="text-xs text-muted-foreground">Ready to create stream</p>
           </div>
         </div>
+      </Card>
+    );
+  }
+
+  if (STREAM_MANAGER_ADDRESS === ZERO_ADDRESS) {
+    return (
+      <Card className="glass-card p-4 border-yellow-500/30 bg-yellow-500/5">
+        <p className="text-sm text-muted-foreground">
+          Configure <code className="font-mono">VITE_STREAM_MANAGER_ADDRESS</code> before approving tokens.
+        </p>
       </Card>
     );
   }

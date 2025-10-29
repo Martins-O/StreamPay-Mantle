@@ -1,28 +1,71 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, Droplets, Github, FileText, Menu, X, Moon, Sun } from 'lucide-react';
+import { Wallet, Droplets, Menu, Moon, Sun, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 const Navbar = () => {
   const location = useLocation();
   const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { connectAsync, connectors, isPending, pendingConnector, error } = useConnect();
   const { disconnect } = useDisconnect();
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [connectorDialogOpen, setConnectorDialogOpen] = useState(false);
 
   const navItems = [
     { path: '/', label: 'Home' },
-    { path: '/dashboard', label: 'Dashboard' },
-    { path: '/docs', label: 'Docs' },
+    { path: '/how-it-works', label: 'How It Works' },
+    { path: '/about', label: 'About' },
   ];
 
   const truncateAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
+  const handleConnectClick = async (fromMobile = false) => {
+    if (fromMobile) {
+      setMobileOpen(false);
+    }
+
+    if (connectors.length === 0) {
+      toast.error('No wallet connectors available');
+      return;
+    }
+
+    const readyConnector = connectors.find((connector) => connector.ready);
+
+    if (connectors.length === 1 && readyConnector) {
+      try {
+        await connectAsync({ connector: readyConnector });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to connect wallet');
+      }
+      return;
+    }
+
+    setConnectorDialogOpen(true);
+  };
+
+  const handleConnectorSelect = async (connector: (typeof connectors)[number]) => {
+    try {
+      await connectAsync({ connector });
+      setConnectorDialogOpen(false);
+      setMobileOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to connect wallet');
+    }
   };
 
   return (
@@ -41,7 +84,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
+            {location.pathname !== '/dashboard' && navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -52,14 +95,14 @@ const Navbar = () => {
                 {item.label}
               </Link>
             ))}
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-primary transition-colors"
-            >
-              <Github className="h-5 w-5" />
-            </a>
+            {isConnected && location.pathname !== '/dashboard' && (
+              <Link
+                to="/dashboard"
+                className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+              >
+                Dashboard
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -96,7 +139,7 @@ const Navbar = () => {
                 </>
               ) : (
                 <Button
-                  onClick={() => connect({ connector: connectors[0] })}
+                  onClick={() => handleConnectClick()}
                   className="animated-gradient hover:opacity-90 transition-opacity"
                 >
                   <Wallet className="mr-2 h-4 w-4" />
@@ -114,7 +157,7 @@ const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="right" className="glass-card w-[300px]">
                 <div className="flex flex-col gap-6 mt-6">
-                  {navItems.map((item) => (
+                  {location.pathname !== '/dashboard' && navItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
@@ -126,7 +169,16 @@ const Navbar = () => {
                       {item.label}
                     </Link>
                   ))}
-                  
+                  {isConnected && location.pathname !== '/dashboard' && (
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setMobileOpen(false)}
+                      className="text-lg font-medium transition-colors hover:text-primary text-muted-foreground"
+                    >
+                      Dashboard
+                    </Link>
+                  )}
+
                   <Button
                     variant="ghost"
                     onClick={toggleTheme}
@@ -165,10 +217,7 @@ const Navbar = () => {
                       </div>
                     ) : (
                       <Button
-                        onClick={() => {
-                          connect({ connector: connectors[0] });
-                          setMobileOpen(false);
-                        }}
+                        onClick={() => handleConnectClick(true)}
                         className="w-full animated-gradient"
                       >
                         <Wallet className="mr-2 h-4 w-4" />
@@ -179,6 +228,43 @@ const Navbar = () => {
                 </div>
               </SheetContent>
             </Sheet>
+
+            <Dialog open={connectorDialogOpen} onOpenChange={setConnectorDialogOpen}>
+              <DialogContent className="glass-card border-border/50">
+                <DialogHeader>
+                  <DialogTitle>Connect a Wallet</DialogTitle>
+                  <DialogDescription>
+                    Choose a wallet provider to connect to StreamPay.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  {connectors.map((connector) => {
+                    const isUnavailable = !connector.ready;
+                    const isLoading = isPending && pendingConnector?.id === connector.id;
+                    return (
+                      <Button
+                        key={connector.id}
+                        variant="outline"
+                        className="w-full justify-between"
+                        disabled={isUnavailable || isLoading}
+                        onClick={() => handleConnectorSelect(connector)}
+                      >
+                        <span>{connector.name}</span>
+                        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {isUnavailable && '(Unavailable)'}
+                          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        </span>
+                      </Button>
+                    );
+                  })}
+                </div>
+                {error && (
+                  <p className="text-xs text-destructive">
+                    {error.message || 'Failed to connect wallet. Try a different option.'}
+                  </p>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

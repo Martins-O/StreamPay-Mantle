@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Stream } from '@/lib/contract';
 import { formatTokenAmount } from '@/lib/hooks';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { TrendingUp } from 'lucide-react';
 
 interface LiveCounterProps {
@@ -9,12 +9,13 @@ interface LiveCounterProps {
 }
 
 const LiveCounter = ({ stream }: LiveCounterProps) => {
-  const [claimableAmount, setClaimableAmount] = useState<bigint>(0n);
   const [displayValue, setDisplayValue] = useState('0.000000');
+  const tokenDecimals = stream.tokenDecimals ?? 18;
+  const tokenSymbol = stream.tokenSymbol ?? '';
 
   useEffect(() => {
     if (!stream || !stream.isActive) {
-      setClaimableAmount(0n);
+      setDisplayValue('0.000000');
       return;
     }
 
@@ -25,13 +26,11 @@ const LiveCounter = ({ stream }: LiveCounterProps) => {
 
       if (elapsed >= totalDuration) {
         const finalAmount = stream.totalAmount - stream.claimedAmount;
-        setClaimableAmount(finalAmount);
-        setDisplayValue(formatTokenAmount(finalAmount, 18));
+        setDisplayValue(formatTokenAmount(finalAmount, tokenDecimals));
       } else {
         const streamed = (stream.totalAmount * elapsed) / totalDuration;
         const claimable = streamed > stream.claimedAmount ? streamed - stream.claimedAmount : 0n;
-        setClaimableAmount(claimable);
-        setDisplayValue(formatTokenAmount(claimable, 18));
+        setDisplayValue(formatTokenAmount(claimable, tokenDecimals));
       }
     };
 
@@ -39,7 +38,7 @@ const LiveCounter = ({ stream }: LiveCounterProps) => {
     const interval = setInterval(updateClaimable, 100); // Update every 100ms for smooth animation
 
     return () => clearInterval(interval);
-  }, [stream]);
+  }, [stream, tokenDecimals]);
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
@@ -53,6 +52,7 @@ const LiveCounter = ({ stream }: LiveCounterProps) => {
           className="text-lg font-bold font-mono"
         >
           {displayValue}
+          {tokenSymbol ? ` ${tokenSymbol}` : ''}
         </motion.p>
       </div>
     </div>

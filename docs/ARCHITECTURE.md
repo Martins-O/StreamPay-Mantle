@@ -38,7 +38,7 @@ Pure mathematical library for:
 ### 2. Frontend Application
 
 #### Technology Stack
-- **Next.js 15**: React framework with App Router
+- **Vite + React 18**: SPA toolchain for fast builds and HMR
 - **TypeScript**: Type-safe development
 - **Wagmi v2**: Web3 React hooks and wallet integration
 - **Viem**: Ethereum interaction library
@@ -135,9 +135,8 @@ Pure mathematical library for:
 - **Gas Testing**: Optimization verification
 
 ### Frontend Testing
-- **Component Tests**: Isolated UI testing
-- **Integration Tests**: End-to-end workflows
-- **Mock Testing**: Blockchain interaction simulation
+- Manual QA runs through the Vite dev server
+- Automated component/integration tests planned for future revisions
 
 ## Deployment Architecture
 
@@ -187,8 +186,8 @@ Pure mathematical library for:
 ## Integration Patterns
 
 ### Wallet Integration
-- Multiple wallet support (MetaMask, WalletConnect)
-- Automatic network switching
+- Multiple wallet support (injected wallets + WalletConnect)
+- Network validation prompts
 - Transaction signing flow
 - Balance monitoring
 

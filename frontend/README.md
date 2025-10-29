@@ -1,73 +1,59 @@
-# Welcome to your Lovable project
+# StreamPay Mantle Frontend
 
-## Project info
+This directory contains the Vite + React interface for the StreamPay Mantle protocol. The app lets senders create payment streams, recipients track live accruals, and both parties manage claims/cancellations on Mantle testnet.
 
-**URL**: https://lovable.dev/projects/8a7f49c8-ce9a-47ee-8520-fb154dfa57e8
+## Tech Stack
+- Vite + React 18 with TypeScript
+- Wagmi v2 / Viem for on-chain interactions
+- Tailwind CSS + shadcn/ui for styling
+- Framer Motion & Recharts for visual feedback
 
-## How can I edit this code?
+## Getting Started
+```bash
+# From repo root
+cd frontend
 
-There are several ways of editing your application.
+# Install dependencies
+npm install
 
-**Use Lovable**
+# Create an environment file
+cp .env.example .env.local
+```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8a7f49c8-ce9a-47ee-8520-fb154dfa57e8) and start prompting.
+Update `.env.local` with your deployment details:
+```ini
+VITE_STREAM_MANAGER_ADDRESS=0x...
+VITE_STREAM_VAULT_ADDRESS=0x...
+VITE_MOCK_USDT_ADDRESS=0x...
+# Optional: enable WalletConnect QR flows
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id
+```
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Then run the dev server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Available Scripts
+- `npm run dev` – start the Vite dev server (default port 5173)
+- `npm run build` – create a production build in `dist/`
+- `npm run preview` – preview the production build locally
+- `npm run lint` – run ESLint across the project
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Wallet Support
+The UI exposes every Wagmi connector that is available at runtime:
+- Injected wallets (MetaMask, Brave, Rabby, etc.)
+- WalletConnect (requires `VITE_WALLETCONNECT_PROJECT_ID`)
 
-**Use GitHub Codespaces**
+Users can choose their provider from the “Connect Wallet” dialog in the navbar or dashboard.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Contract Configuration
+The interface needs deployed contract addresses to read/write data. After running the Foundry deployment scripts, append the values from `contracts/deployment.env` to `.env.local`.
 
-## What technologies are used for this project?
+If no addresses are configured the dashboard will stay in read-only mode and prompt you to supply the required env variables.
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/8a7f49c8-ce9a-47ee-8520-fb154dfa57e8) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Building for Production
+```bash
+npm run build
+```
+The compiled assets will be emitted to `dist/`. Host those assets on any static provider (Vercel, Netlify, IPFS, etc.).

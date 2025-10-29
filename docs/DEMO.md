@@ -44,8 +44,8 @@ npm run dev
 
 2. **Get Mock USDT Tokens**
    ```solidity
-   // Call mint function on Mock USDT contract
-   // Or use the faucet feature in the UI
+   // Call the mint function on the deployed Mock USDT contract
+   // Example: mockUSDT.mint(alice, 1_000_000e6);
    ```
 
 3. **Approve Token Spending**
