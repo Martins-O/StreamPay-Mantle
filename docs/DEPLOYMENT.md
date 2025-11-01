@@ -44,7 +44,7 @@ PRIVATE_KEY=your_private_key_without_0x_prefix
 MANTLESCAN_API_KEY=your_mantlescan_api_key
 
 # RPC URLs
-MANTLE_TESTNET_RPC=https://rpc.testnet.mantle.xyz
+MANTLE_TESTNET_RPC=https://mantle-sepolia.drpc.org
 MANTLE_MAINNET_RPC=https://rpc.mantle.xyz
 ```
 
@@ -62,10 +62,27 @@ Edit `.env.local`:
 VITE_STREAM_MANAGER_ADDRESS=0x0000000000000000000000000000000000000000
 VITE_STREAM_VAULT_ADDRESS=0x0000000000000000000000000000000000000000
 VITE_MOCK_USDT_ADDRESS=0x0000000000000000000000000000000000000000
+VITE_STREAM_TOKEN_ADDRESS=0x0000000000000000000000000000000000000000
+
+# RPC URL (override if you run your own node)
+VITE_MANTLE_RPC_URL=https://mantle-sepolia.drpc.org
 
 # Optional WalletConnect Project ID
 VITE_WALLETCONNECT_PROJECT_ID=
+
+# Optional notifications
+VITE_PUSH_CHANNEL_ADDRESS=
+VITE_PUSH_CHANNEL_PK=
+VITE_PUSH_ENV=staging
+VITE_WALLETCONNECT_NOTIFY_PROJECT_ID=
+VITE_WALLETCONNECT_NOTIFY_SECRET=
 ```
+
+> The frontend always streams the token set in `VITE_STREAM_TOKEN_ADDRESS`. Leaving it empty will fall back to
+> `VITE_MOCK_USDT_ADDRESS`.
+
+> Push Protocol and WalletConnect Notify configuration is optional. Only populate these keys if you operate a
+> notification channel—otherwise the dApp will continue to function without attempting to send alerts.
 
 ## Smart Contract Deployment
 
@@ -99,10 +116,9 @@ chmod +x verify.sh
 
 The script will:
 - Run tests before deployment
-- Deploy StreamManager (which creates StreamVault)
-- Deploy Mock USDT token
-- Save addresses to `deployment.env`
-- Attempt contract verification
+- Deploy `StreamManager` (which internally creates `StreamVault`)
+- Deploy the mock USDT token (your stream token)
+- Print the deployed addresses so you can copy them into your env files
 
 #### Option B: Manual Deployment
 
@@ -132,14 +148,22 @@ Mock USDT deployed to: 0x...
 
 Copy the deployed addresses to your frontend environment:
 
-```bash
-# Show the deployed addresses
-cat contracts/deployment.env
+Create a `contracts/deployment.env` file (or update it) with the addresses printed by the deployment script:
 
-# Copy the values into frontend/.env.local
+```
+STREAM_MANAGER_ADDRESS=0x...
+STREAM_VAULT_ADDRESS=0x...
+MOCK_USDT_ADDRESS=0x...
+STREAM_TOKEN_ADDRESS=0x...
+```
+
+Then copy those values into `frontend/.env.local`:
+
+```
 #   VITE_STREAM_MANAGER_ADDRESS=
 #   VITE_STREAM_VAULT_ADDRESS=
 #   VITE_MOCK_USDT_ADDRESS=
+#   VITE_STREAM_TOKEN_ADDRESS=
 ```
 
 ## Frontend Deployment
@@ -314,25 +338,25 @@ echo $VITE_STREAM_MANAGER_ADDRESS
 
 ## Network Configuration
 
-### Mantle Testnet Details
+### Mantle Sepolia Testnet Details
 
 ```json
 {
   "chainId": 5003,
   "chainName": "Mantle Sepolia Testnet",
-  "rpcUrls": ["https://rpc.testnet.mantle.xyz"],
+  "rpcUrls": ["https://mantle-sepolia.drpc.org"],
   "nativeCurrency": {
     "name": "Mantle",
     "symbol": "MNT",
     "decimals": 18
   },
-  "blockExplorerUrls": ["https://explorer.testnet.mantle.xyz"]
+  "blockExplorerUrls": ["https://explorer.sepolia.mantle.xyz"]
 }
 ```
 
 ### Adding to MetaMask
 
-Users need to add Mantle testnet to their wallet:
+Users need to add Mantle Sepolia testnet to their wallet:
 
 1. Open MetaMask
 2. Click "Add Network"

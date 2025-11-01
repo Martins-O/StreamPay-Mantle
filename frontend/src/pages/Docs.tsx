@@ -62,16 +62,16 @@ const Docs = () => {
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-lg mb-2">2. Configure Mantle Testnet</h3>
-                    <p className="text-muted-foreground mb-2">Add Mantle Testnet to your wallet:</p>
+                    <h3 className="font-semibold text-lg mb-2">2. Configure Mantle Sepolia Testnet</h3>
+                    <p className="text-muted-foreground mb-2">Add Mantle Sepolia to your wallet:</p>
                     <Card className="bg-background/50 p-4 space-y-2 font-mono text-xs">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Network Name:</span>
-                        <span>Mantle Testnet</span>
+                        <span>Mantle Sepolia Testnet</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">RPC URL:</span>
-                        <span>https://rpc.testnet.mantle.xyz</span>
+                        <span>https://mantle-sepolia.drpc.org</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Chain ID:</span>
@@ -157,6 +157,18 @@ const Docs = () => {
                         <p className="text-xs text-muted-foreground mt-1">Cancel an active stream</p>
                       </Card>
                       <Card className="bg-background/50 p-3">
+                        <code className="text-xs font-mono">pauseStream(streamId)</code>
+                        <p className="text-xs text-muted-foreground mt-1">Temporarily halt a stream and settle accrued funds</p>
+                      </Card>
+                      <Card className="bg-background/50 p-3">
+                        <code className="text-xs font-mono">resumeStream(streamId)</code>
+                        <p className="text-xs text-muted-foreground mt-1">Resume a paused stream with precise accrual adjustments</p>
+                      </Card>
+                      <Card className="bg-background/50 p-3">
+                        <code className="text-xs font-mono">createStreamsBatch(params[])</code>
+                        <p className="text-xs text-muted-foreground mt-1">Create multiple streams in a single transaction</p>
+                      </Card>
+                      <Card className="bg-background/50 p-3">
                         <code className="text-xs font-mono">getStream(streamId)</code>
                         <p className="text-xs text-muted-foreground mt-1">Inspect a specific stream</p>
                       </Card>
@@ -168,6 +180,10 @@ const Docs = () => {
                         <code className="text-xs font-mono">getRecipientStreams(address)</code>
                         <p className="text-xs text-muted-foreground mt-1">List stream IDs where the address is recipient</p>
                       </Card>
+                      <Card className="bg-background/50 p-3">
+                        <code className="text-xs font-mono">configureYieldStrategy(token, strategy, reserveBps)</code>
+                        <p className="text-xs text-muted-foreground mt-1">Wire the vault into an external yield strategy (owner only)</p>
+                      </Card>
                     </div>
                   </div>
 
@@ -178,6 +194,7 @@ const Docs = () => {
                       <li>Only receiver can claim tokens</li>
                       <li>Linear vesting with per-second precision</li>
                       <li>Automatic refunds on cancellation</li>
+                      <li>Paused streams settle outstanding balances immediately</li>
                     </ul>
                   </div>
                 </div>
@@ -196,13 +213,13 @@ const Docs = () => {
                     <h3 className="font-semibold text-lg mb-2">Install Dependencies</h3>
                     <Card className="bg-background/50 p-4 relative">
                       <pre className="text-xs font-mono overflow-x-auto">
-                        {`npm install wagmi viem @tanstack/react-query`}
+{`npm install wagmi viem @tanstack/react-query @pushprotocol/restapi @walletconnect/notify-client ethers`}
                       </pre>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="absolute top-2 right-2"
-                        onClick={() => copyToClipboard('npm install wagmi viem @tanstack/react-query')}
+                        onClick={() => copyToClipboard('npm install wagmi viem @tanstack/react-query @pushprotocol/restapi @walletconnect/notify-client ethers')}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -245,11 +262,32 @@ const config = createConfig({
                         <span className="text-muted-foreground">VITE_WALLETCONNECT_PROJECT_ID</span>
                         <span>Optional</span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_PUSH_CHANNEL_ADDRESS</span>
+                        <span>Optional</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_PUSH_CHANNEL_PK</span>
+                        <span>Optional</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_WALLETCONNECT_NOTIFY_PROJECT_ID</span>
+                        <span>Optional</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">VITE_WALLETCONNECT_NOTIFY_SECRET</span>
+                        <span>Optional</span>
+                      </div>
                     </Card>
                     <p className="text-xs text-muted-foreground mt-2">
                       The app runs in read-only mode if these addresses are not set.
                     </p>
                   </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Push Protocol and WalletConnect Notify keys are optional. When provided, the app will deliver
+                    lifecycle notifications (stream created, paused, resumed, claim reminders) to recipients.
+                  </p>
 
                   <div>
                     <h3 className="font-semibold text-lg mb-2">Example: Create Stream</h3>

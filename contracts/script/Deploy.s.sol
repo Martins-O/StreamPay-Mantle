@@ -5,6 +5,9 @@ import {Script, console} from "forge-std/Script.sol";
 import {StreamManager} from "../src/StreamManager.sol";
 import {MockERC20} from "../src/MockERC20.sol";
 
+// Note: AccountingLib is a pure library linked inside StreamManager, so it does not
+// require a separate deployment. StreamVault is created by the StreamManager constructor.
+
 contract DeployScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -26,17 +29,7 @@ contract DeployScript is Script {
         console.log("StreamManager deployed to:", address(streamManager));
         console.log("StreamVault deployed to:", address(streamManager.VAULT()));
         console.log("Mock USDT deployed to:", address(mockUSDT));
-
-        // Save deployment info to a file
-        string memory deploymentInfo = string(
-            abi.encodePacked(
-                "STREAM_MANAGER_ADDRESS=", vm.toString(address(streamManager)), "\n",
-                "STREAM_VAULT_ADDRESS=", vm.toString(address(streamManager.VAULT())), "\n",
-                "MOCK_USDT_ADDRESS=", vm.toString(address(mockUSDT)), "\n"
-            )
-        );
-
-        vm.writeFile("./deployment.env", deploymentInfo);
-        console.log("Deployment addresses saved to deployment.env");
+        console.log("Stream token address:", address(mockUSDT));
+        console.log("\nCopy the addresses above into contracts/deployment.env and frontend/.env.local.");
     }
 }

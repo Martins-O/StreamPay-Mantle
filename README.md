@@ -70,6 +70,9 @@ forge test
 
 # Deploy to Mantle testnet
 ./deploy.sh
+
+# Copy the printed contract addresses into contracts/deployment.env and frontend/.env.local
+# (STREAM_MANAGER_ADDRESS, STREAM_VAULT_ADDRESS, MOCK_USDT_ADDRESS, STREAM_TOKEN_ADDRESS)
 ```
 
 ### 3. Setup Frontend
@@ -81,6 +84,8 @@ cp .env.example .env.local
 #   VITE_STREAM_MANAGER_ADDRESS=
 #   VITE_STREAM_VAULT_ADDRESS=
 #   VITE_MOCK_USDT_ADDRESS=
+#   VITE_STREAM_TOKEN_ADDRESS=
+#   VITE_MANTLE_RPC_URL=https://mantle-sepolia.drpc.org
 # Optional: set VITE_WALLETCONNECT_PROJECT_ID for WalletConnect support
 
 npm install
@@ -92,7 +97,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) and:
 1. Connect your wallet (MetaMask, browser extension, or WalletConnect)
 2. Switch to Mantle testnet
-3. Mint mock USDT using the deployed token contract
+3. Mint the configured stream token (mock USDT) using the deployed contract
 4. Create your first stream!
 
 ## 📋 Features
@@ -207,10 +212,10 @@ Ran 4 test suites: 30 tests passed, 0 failed
 
 ## 🌐 Deployment
 
-### Mantle Testnet
+### Mantle Sepolia Testnet
 
 - **Network ID**: 5003
-- **RPC**: https://rpc.testnet.mantle.xyz
+- **RPC**: https://mantle-sepolia.drpc.org
 - **Explorer**: https://explorer.testnet.mantle.xyz
 
 ### Contract Addresses

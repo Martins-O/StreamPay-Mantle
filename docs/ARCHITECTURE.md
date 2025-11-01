@@ -20,6 +20,8 @@ The main orchestration contract that handles:
 - Pausable functionality for emergency stops
 - Owner-only administrative functions
 - Gas-optimized operations
+- Sender-controlled stream pausing/resuming with precise accrual accounting
+- Batch payroll stream creation for multi-recipient workflows
 
 #### StreamVault.sol
 Secure token escrow system:
@@ -27,6 +29,7 @@ Secure token escrow system:
 - Owner-only withdrawal mechanism
 - Safe ERC-20 token handling
 - Balance tracking and validation
+- Configurable yield strategies with reserve ratios and automated allocation
 
 #### AccountingLib.sol
 Pure mathematical library for:
@@ -44,6 +47,7 @@ Pure mathematical library for:
 - **Viem**: Ethereum interaction library
 - **TailwindCSS**: Utility-first styling
 - **Recharts**: Data visualization
+- **Push Protocol & WalletConnect Notify**: Optional on-chain/off-chain notifications
 
 #### Architecture Pattern
 - **Client-side rendering** for real-time updates
@@ -82,6 +86,21 @@ Pure mathematical library for:
 5. Event emitted
 6. Frontend reflects changes
 ```
+### Pause & Resume Lifecycle
+- Sender pauses the stream; any outstanding balance is settled immediately.
+- Accrual is frozen using the pause timestamp and resumes with accurate catch-up math.
+- Notifications keep both parties aware of the current status.
+
+### Batch Payroll Creation
+- Spreadsheet-style UI gathers multiple recipients and amounts in a single submission.
+- Shared duration/token keeps allowance approval predictable while the contract iterates safely.
+- Each stream still emits its own events for analytics and auditability.
+
+### Yield Allocation
+- Vault owner can route idle balances into external strategies while maintaining a configurable reserve.
+- Deposits automatically sweep excess funds; withdrawals pull from strategies on demand.
+- Harvest hooks let operators realise yield without interrupting active streams.
+
 
 ## Security Considerations
 

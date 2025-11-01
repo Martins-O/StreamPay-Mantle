@@ -19,6 +19,11 @@ const LiveCounter = ({ stream }: LiveCounterProps) => {
       return;
     }
 
+    if (stream.isPaused) {
+      setDisplayValue('0.000000');
+      return;
+    }
+
     const updateClaimable = () => {
       const now = BigInt(Math.floor(Date.now() / 1000));
       const elapsed = now - stream.startTime;

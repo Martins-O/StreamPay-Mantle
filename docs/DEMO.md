@@ -133,7 +133,18 @@ setInterval(() => {
 - 📊 Live chart updates
 - ⚡ Instantaneous balance changes
 
-### Step 6: Alice Cancels Stream (Demo)
+### Step 6: Pause & Resume Mid-Stream
+
+1. **Sender Pauses**
+   - Alice clicks "Pause Stream" from the dashboard
+   - Outstanding claimable funds are automatically delivered to Bob
+   - Both parties receive push/WalletConnect notifications (when configured)
+
+2. **Sender Resumes**
+   - Alice clicks "Resume Stream" to continue accrual
+   - The dashboard shows the paused duration deducted from the total timeline
+
+### Step 7: Alice Cancels Stream (Demo)
 
 1. **Switch Back to Alice**
    - Connect Alice's wallet

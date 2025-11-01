@@ -111,7 +111,7 @@ PRIVATE_KEY=$PRIVATE_KEY
 MANTLESCAN_API_KEY=$MANTLESCAN_API_KEY
 
 # RPC URLs
-MANTLE_TESTNET_RPC=https://rpc.testnet.mantle.xyz
+MANTLE_TESTNET_RPC=https://mantle-sepolia.drpc.org
 MANTLE_MAINNET_RPC=https://rpc.mantle.xyz
 
 # Contract Addresses (filled after deployment)
@@ -185,6 +185,11 @@ if [ ! -f .env.local ]; then
     echo "We need to configure your frontend settings."
 
     WALLETCONNECT_PROJECT_ID=$(prompt_user "Enter your WalletConnect Project ID (get from cloud.walletconnect.com)")
+    PUSH_CHANNEL_ADDRESS=$(prompt_user "Enter your Push Protocol channel address (optional)")
+    PUSH_CHANNEL_PK=$(prompt_user "Enter the Push Protocol channel private key (optional, never share publicly)")
+    PUSH_ENV_VALUE=$(prompt_user "Enter Push Protocol environment (defaults to staging)")
+    WC_NOTIFY_PROJECT_ID=$(prompt_user "Enter WalletConnect Notify project ID (optional)")
+    WC_NOTIFY_SECRET=$(prompt_user "Enter WalletConnect Notify secret (optional)")
 
     cat > .env.local << EOF
 # Frontend Environment Variables
@@ -192,10 +197,23 @@ if [ ! -f .env.local ]; then
 # WalletConnect Project ID
 VITE_WALLETCONNECT_PROJECT_ID=$WALLETCONNECT_PROJECT_ID
 
+# Push Protocol notifications (optional)
+VITE_PUSH_CHANNEL_ADDRESS=$PUSH_CHANNEL_ADDRESS
+VITE_PUSH_CHANNEL_PK=$PUSH_CHANNEL_PK
+VITE_PUSH_ENV=${PUSH_ENV_VALUE:-staging}
+
+# WalletConnect Notify (optional)
+VITE_WALLETCONNECT_NOTIFY_PROJECT_ID=$WC_NOTIFY_PROJECT_ID
+VITE_WALLETCONNECT_NOTIFY_SECRET=$WC_NOTIFY_SECRET
+
 # Contract Addresses (will be populated after deployment)
 VITE_STREAM_MANAGER_ADDRESS=
 VITE_STREAM_VAULT_ADDRESS=
 VITE_MOCK_USDT_ADDRESS=
+VITE_STREAM_TOKEN_ADDRESS=
+
+# Mantle RPC URL (override if you host your own node)
+VITE_MANTLE_RPC_URL=https://mantle-sepolia.drpc.org
 EOF
 
     # Copy contract addresses if they exist
@@ -208,7 +226,11 @@ EOF
             case "$line" in
                 STREAM_MANAGER_ADDRESS=*) echo "VITE_STREAM_MANAGER_ADDRESS=${line#*=}" >> .env.local ;;
                 STREAM_VAULT_ADDRESS=*) echo "VITE_STREAM_VAULT_ADDRESS=${line#*=}" >> .env.local ;;
-                MOCK_USDT_ADDRESS=*) echo "VITE_MOCK_USDT_ADDRESS=${line#*=}" >> .env.local ;;
+                MOCK_USDT_ADDRESS=*)
+                    echo "VITE_MOCK_USDT_ADDRESS=${line#*=}" >> .env.local
+                    echo "VITE_STREAM_TOKEN_ADDRESS=${line#*=}" >> .env.local
+                    ;;
+                STREAM_TOKEN_ADDRESS=*) echo "VITE_STREAM_TOKEN_ADDRESS=${line#*=}" >> .env.local ;;
             esac
         done < ../contracts/deployment.env
     fi
@@ -257,8 +279,8 @@ echo "  📖 docs/DEPLOYMENT.md   - Deployment guide"
 echo "  📖 docs/DEMO.md         - Demo walkthrough"
 
 echo -e "${BLUE}🔗 Useful Links:${NC}"
-echo "  🌐 Mantle Testnet Faucet: https://faucet.testnet.mantle.xyz"
-echo "  🔍 Mantle Explorer: https://explorer.testnet.mantle.xyz"
+echo "  🌐 Mantle Faucet: https://faucet.testnet.mantle.xyz"
+echo "  🔍 Mantle Explorer: https://explorer.sepolia.mantle.xyz"
 echo "  📋 WalletConnect: https://cloud.walletconnect.com"
 
 echo -e "${BLUE}💡 Quick Commands:${NC}"

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Stream } from '@/lib/contract';
-import { useClaimStream, useCancelStream, formatTokenAmount } from '@/lib/hooks';
+import { useClaimStream, useCancelStream, usePauseStream, useResumeStream, formatTokenAmount } from '@/lib/hooks';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ExternalLink, DollarSign, X, CheckSquare } from 'lucide-react';
+import { ExternalLink, DollarSign, X, Pause, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import LiveCounter from './LiveCounter';
+import { TARGET_CHAIN_NAME } from '@/lib/web3';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 interface StreamTableProps {
   streams: Stream[];
@@ -16,13 +18,24 @@ interface StreamTableProps {
   onRefetch: () => void;
   showHistory?: boolean;
   onTransactionSubmit?: (hash: string, description: string) => void;
+  isNetworkReady?: boolean;
 }
 
-const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onTransactionSubmit }: StreamTableProps) => {
+const StreamTable = ({
+  streams,
+  userAddress,
+  onRefetch,
+  showHistory = false,
+  onTransactionSubmit,
+  isNetworkReady = true,
+}: StreamTableProps) => {
   const { claimStream, isPending: isClaiming } = useClaimStream();
   const { cancelStream, isPending: isCancelling } = useCancelStream();
+  const { pauseStream, isPending: isPausing } = usePauseStream();
+  const { resumeStream, isPending: isResuming } = useResumeStream();
   const [selectedStreamId, setSelectedStreamId] = useState<bigint | null>(null);
   const [selectedStreams, setSelectedStreams] = useState<Set<bigint>>(new Set());
+  const { notifyStreamEvent } = useNotifications();
 
   const displayStreams = showHistory ? streams.filter(s => !s.isActive) : streams.filter(s => s.isActive);
 
@@ -36,7 +49,23 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
     setSelectedStreams(newSelected);
   };
 
+  const guardNetwork = () => {
+    if (!isNetworkReady) {
+      toast.error(`Switch to ${TARGET_CHAIN_NAME} to manage streams.`);
+      return false;
+    }
+    return true;
+  };
+
   const handleClaim = async (streamId: bigint) => {
+    if (!guardNetwork()) {
+      return;
+    }
+    const target = streams.find(s => s.id === streamId);
+    if (target?.isPaused) {
+      toast.info('This stream is currently paused. Resume it to continue accruing.');
+      return;
+    }
     setSelectedStreamId(streamId);
     try {
       const hash = await claimStream(streamId);
@@ -45,6 +74,14 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
       }
       toast.success('Claim transaction submitted');
       setTimeout(() => onRefetch(), 2000);
+      if (target) {
+        await notifyStreamEvent({
+          type: 'claim',
+          stream: target,
+          actor: userAddress,
+          recipients: [target.sender],
+        });
+      }
     } catch (error) {
       toast.error('Failed to claim stream');
     } finally {
@@ -53,6 +90,10 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
   };
 
   const handleCancel = async (streamId: bigint) => {
+    if (!guardNetwork()) {
+      return;
+    }
+    const target = streams.find(s => s.id === streamId);
     setSelectedStreamId(streamId);
     try {
       const hash = await cancelStream(streamId);
@@ -61,6 +102,14 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
       }
       toast.success('Cancel transaction submitted');
       setTimeout(() => onRefetch(), 2000);
+      if (target) {
+        await notifyStreamEvent({
+          type: 'cancel',
+          stream: target,
+          actor: userAddress,
+          recipients: [target.recipient],
+        });
+      }
     } catch (error) {
       toast.error('Failed to cancel stream');
     } finally {
@@ -69,9 +118,17 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
   };
 
   const handleBatchClaim = async () => {
+    if (!guardNetwork()) {
+      return;
+    }
     const claimableStreams = Array.from(selectedStreams).filter(id => {
       const stream = streams.find(s => s.id === id);
-      return stream && stream.recipient.toLowerCase() === userAddress.toLowerCase() && stream.isActive;
+      return (
+        stream &&
+        stream.recipient.toLowerCase() === userAddress.toLowerCase() &&
+        stream.isActive &&
+        !stream.isPaused
+      );
     });
 
     for (const streamId of claimableStreams) {
@@ -81,6 +138,9 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
   };
 
   const handleBatchCancel = async () => {
+    if (!guardNetwork()) {
+      return;
+    }
     const cancellableStreams = Array.from(selectedStreams).filter(id => {
       const stream = streams.find(s => s.id === id);
       return stream && stream.sender.toLowerCase() === userAddress.toLowerCase() && stream.isActive;
@@ -92,10 +152,69 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
     setSelectedStreams(new Set());
   };
 
+  const handlePause = async (streamId: bigint) => {
+    if (!guardNetwork()) {
+      return;
+    }
+    const target = streams.find(s => s.id === streamId);
+    setSelectedStreamId(streamId);
+    try {
+      const hash = await pauseStream(streamId);
+      if (hash && onTransactionSubmit) {
+        onTransactionSubmit(hash, `Pause Stream #${streamId}`);
+      }
+      toast.success('Stream paused');
+      setTimeout(() => onRefetch(), 2000);
+      if (target) {
+        await notifyStreamEvent({
+          type: 'pause',
+          stream: target,
+          actor: userAddress,
+          recipients: [target.recipient],
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to pause stream');
+    } finally {
+      setSelectedStreamId(null);
+    }
+  };
+
+  const handleResume = async (streamId: bigint) => {
+    if (!guardNetwork()) {
+      return;
+    }
+    const target = streams.find(s => s.id === streamId);
+    setSelectedStreamId(streamId);
+    try {
+      const hash = await resumeStream(streamId);
+      if (hash && onTransactionSubmit) {
+        onTransactionSubmit(hash, `Resume Stream #${streamId}`);
+      }
+      toast.success('Stream resumed');
+      setTimeout(() => onRefetch(), 2000);
+      if (target) {
+        await notifyStreamEvent({
+          type: 'resume',
+          stream: target,
+          actor: userAddress,
+          recipients: [target.recipient],
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to resume stream');
+    } finally {
+      setSelectedStreamId(null);
+    }
+  };
+
   const calculateProgress = (stream: Stream) => {
     const now = BigInt(Math.floor(Date.now() / 1000));
-    const elapsed = now - stream.startTime;
-    const progress = Number((elapsed * 100n) / stream.duration);
+    const reference = stream.isPaused && stream.pauseStart > 0n ? stream.pauseStart : now;
+    const elapsed = reference > stream.startTime ? reference - stream.startTime : 0n;
+    const pausedOffset = stream.pausedDuration;
+    const effectiveElapsed = elapsed > pausedOffset ? elapsed - pausedOffset : 0n;
+    const progress = Number((effectiveElapsed * 100n) / stream.duration);
     return Math.min(progress, 100);
   };
 
@@ -130,7 +249,7 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                 onClick={handleBatchClaim}
                 size="sm"
                 className="animated-gradient"
-                disabled={isClaiming}
+                disabled={!isNetworkReady || isClaiming}
               >
                 <DollarSign className="mr-2 h-4 w-4" />
                 Claim All
@@ -139,7 +258,7 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                 onClick={handleBatchCancel}
                 size="sm"
                 variant="destructive"
-                disabled={isCancelling}
+                disabled={!isNetworkReady || isCancelling}
               >
                 <X className="mr-2 h-4 w-4" />
                 Cancel All
@@ -152,11 +271,18 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
       <AnimatePresence>
         {displayStreams.map((stream, index) => {
           const isReceiver = stream.recipient.toLowerCase() === userAddress.toLowerCase();
+          const isSender = stream.sender.toLowerCase() === userAddress.toLowerCase();
           const remaining = stream.totalAmount - stream.claimedAmount;
           const progress = calculateProgress(stream);
           const isSelected = selectedStreams.has(stream.id);
           const tokenDecimals = stream.tokenDecimals ?? 18;
           const tokenSymbol = stream.tokenSymbol ?? '';
+          const statusLabel = stream.isActive ? (stream.isPaused ? 'Paused' : 'Active') : 'Ended';
+          const statusIndicator = !stream.isActive
+            ? 'bg-muted'
+            : stream.isPaused
+              ? 'bg-yellow-400'
+              : 'bg-primary animate-pulse';
 
           return (
             <motion.div
@@ -221,12 +347,8 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                         <div>
                           <p className="text-muted-foreground">Status</p>
                           <div className="flex items-center gap-2">
-                            <div
-                              className={`h-2 w-2 rounded-full ${
-                                stream.isActive ? 'bg-primary animate-pulse' : 'bg-muted'
-                              }`}
-                            />
-                            <p className="font-semibold">{stream.isActive ? 'Active' : 'Ended'}</p>
+                            <div className={`h-2 w-2 rounded-full ${statusIndicator}`} />
+                            <p className="font-semibold">{statusLabel}</p>
                           </div>
                         </div>
                       </div>
@@ -241,7 +363,7 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                             <Progress value={progress} className="h-2" />
                           </div>
 
-                          {stream.isActive && isReceiver && (
+                          {stream.isActive && !stream.isPaused && isReceiver && (
                             <LiveCounter stream={stream} />
                           )}
                         </>
@@ -249,28 +371,62 @@ const StreamTable = ({ streams, userAddress, onRefetch, showHistory = false, onT
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 md:w-40">
+                  <div className="flex flex-col gap-2 md:w-48">
                     {!showHistory && isReceiver && stream.isActive && (
                       <Button
                         onClick={() => handleClaim(stream.id)}
-                        disabled={isClaiming && selectedStreamId === stream.id}
+                        disabled={
+                          !isNetworkReady ||
+                          stream.isPaused ||
+                          (isClaiming && selectedStreamId === stream.id)
+                        }
                         className="animated-gradient hover:opacity-90"
                         size="sm"
                       >
                         <DollarSign className="mr-2 h-4 w-4" />
-                        {isClaiming && selectedStreamId === stream.id ? 'Claiming...' : 'Claim'}
+                        {stream.isPaused
+                          ? 'Paused'
+                          : isClaiming && selectedStreamId === stream.id
+                            ? 'Claiming...'
+                            : 'Claim'}
                       </Button>
                     )}
-                    {!showHistory && !isReceiver && stream.isActive && (
-                      <Button
-                        onClick={() => handleCancel(stream.id)}
-                        disabled={isCancelling && selectedStreamId === stream.id}
-                        variant="destructive"
-                        size="sm"
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        {isCancelling && selectedStreamId === stream.id ? 'Cancelling...' : 'Cancel'}
-                      </Button>
+                    {!showHistory && isSender && stream.isActive && (
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          onClick={() => handleCancel(stream.id)}
+                          disabled={!isNetworkReady || (isCancelling && selectedStreamId === stream.id)}
+                          variant="destructive"
+                          size="sm"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          {isCancelling && selectedStreamId === stream.id ? 'Cancelling...' : 'Cancel'}
+                        </Button>
+                        <Button
+                          onClick={() => (stream.isPaused ? handleResume(stream.id) : handlePause(stream.id))}
+                          disabled={
+                            !isNetworkReady ||
+                            (stream.isPaused
+                              ? isResuming && selectedStreamId === stream.id
+                              : isPausing && selectedStreamId === stream.id)
+                          }
+                          variant={stream.isPaused ? 'default' : 'secondary'}
+                          size="sm"
+                        >
+                          {stream.isPaused ? (
+                            <Play className="mr-2 h-4 w-4" />
+                          ) : (
+                            <Pause className="mr-2 h-4 w-4" />
+                          )}
+                          {stream.isPaused
+                            ? isResuming && selectedStreamId === stream.id
+                              ? 'Resuming...'
+                              : 'Resume'
+                            : isPausing && selectedStreamId === stream.id
+                              ? 'Pausing...'
+                              : 'Pause'}
+                        </Button>
+                      </div>
                     )}
                     <Button variant="outline" size="sm" asChild>
                       <a

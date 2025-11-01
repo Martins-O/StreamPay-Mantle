@@ -14,7 +14,10 @@ library AccountingLib {
         uint256 duration,
         uint256 lastClaimed,
         uint256 stopTime,
-        uint256 timestamp
+        uint256 timestamp,
+        bool isPaused,
+        uint256 pauseStart,
+        uint256 pausedDuration
     ) internal pure returns (AccrualResult memory) {
         if (duration == 0) {
             return AccrualResult({claimable: 0, accrualPoint: lastClaimed});
@@ -26,6 +29,10 @@ library AccountingLib {
 
         uint256 streamEndTime = startTime + duration;
         uint256 effectiveTime = timestamp;
+
+        if (isPaused && pauseStart != 0 && pauseStart < effectiveTime) {
+            effectiveTime = pauseStart;
+        }
 
         if (stopTime != 0 && stopTime < effectiveTime) {
             effectiveTime = stopTime;
@@ -39,12 +46,19 @@ library AccountingLib {
             return AccrualResult({claimable: 0, accrualPoint: effectiveTime});
         }
 
-        uint256 elapsed = effectiveTime - startTime;
-        if (elapsed > duration) {
-            elapsed = duration;
+        uint256 elapsed = effectiveTime > startTime ? effectiveTime - startTime : 0;
+
+        if (pausedDuration > elapsed) {
+            pausedDuration = elapsed;
         }
 
-        uint256 totalStreamed = (totalAmount * elapsed) / duration;
+        uint256 effectiveElapsed = elapsed - pausedDuration;
+
+        if (effectiveElapsed > duration) {
+            effectiveElapsed = duration;
+        }
+
+        uint256 totalStreamed = (totalAmount * effectiveElapsed) / duration;
 
         if (totalStreamed <= claimedAmount) {
             return AccrualResult({claimable: 0, accrualPoint: effectiveTime});

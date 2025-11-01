@@ -12,7 +12,10 @@ contract AccountingLibHarness {
         uint256 duration,
         uint256 lastClaimed,
         uint256 stopTime,
-        uint256 timestamp
+        uint256 timestamp,
+        bool isPaused,
+        uint256 pauseStart,
+        uint256 pausedDuration
     ) external pure returns (AccountingLib.AccrualResult memory) {
         return AccountingLib.calculateAccrual(
             totalAmount,
@@ -21,7 +24,10 @@ contract AccountingLibHarness {
             duration,
             lastClaimed,
             stopTime,
-            timestamp
+            timestamp,
+            isPaused,
+            pauseStart,
+            pausedDuration
         );
     }
 }
@@ -47,7 +53,10 @@ contract AccountingLibTest is Test {
             duration,
             startTime,
             0,
-            timestamp
+            timestamp,
+            false,
+            0,
+            0
         );
 
         uint256 expectedClaimable = (totalAmount * 10) / duration;
@@ -69,7 +78,10 @@ contract AccountingLibTest is Test {
             duration,
             startTime + 30,
             0,
-            timestamp
+            timestamp,
+            false,
+            0,
+            0
         );
 
         uint256 totalStreamed = (totalAmount * 50) / duration;
@@ -92,7 +104,10 @@ contract AccountingLibTest is Test {
             duration,
             startTime,
             stopTime,
-            timestamp
+            timestamp,
+            false,
+            0,
+            0
         );
 
         uint256 expectedStreamed = (totalAmount * 25) / duration;
@@ -114,7 +129,10 @@ contract AccountingLibTest is Test {
             duration,
             startTime,
             0,
-            timestamp
+            timestamp,
+            false,
+            0,
+            0
         );
 
         assertEq(result.claimable, totalAmount);
@@ -136,7 +154,10 @@ contract AccountingLibTest is Test {
             duration,
             lastClaimed,
             0,
-            timestamp
+            timestamp,
+            false,
+            0,
+            0
         );
 
         assertEq(result.claimable, 0);
@@ -151,10 +172,51 @@ contract AccountingLibTest is Test {
             0,
             1_000,
             0,
-            2_000
+            2_000,
+            false,
+            0,
+            0
         );
-
+    
         assertEq(result.claimable, 0);
         assertEq(result.accrualPoint, 1_000);
+    }
+
+    function testAccrualHandlesPausedStream() public view {
+        uint256 totalAmount = 1_000 ether;
+        uint256 startTime = 1_000;
+        uint256 duration = 100;
+
+        AccountingLib.AccrualResult memory resultWhilePaused = harness.calculateAccrual(
+            totalAmount,
+            0,
+            startTime,
+            duration,
+            startTime + 40,
+            0,
+            startTime + 80,
+            true,
+            startTime + 40,
+            0
+        );
+
+        assertEq(resultWhilePaused.claimable, 0);
+        assertEq(resultWhilePaused.accrualPoint, startTime + 40);
+
+        AccountingLib.AccrualResult memory resultAfterResume = harness.calculateAccrual(
+            totalAmount,
+            (totalAmount * 40) / duration,
+            startTime,
+            duration,
+            startTime + 40,
+            0,
+            startTime + 120,
+            false,
+            0,
+            40
+        );
+
+        uint256 streamed = (totalAmount * 80) / duration;
+        assertEq(resultAfterResume.claimable, streamed - (totalAmount * 40) / duration);
     }
 }

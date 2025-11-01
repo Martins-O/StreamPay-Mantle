@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Wallet, Droplets, Menu, Moon, Sun, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -14,15 +14,20 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
 
 const Navbar = () => {
   const location = useLocation();
   const { address, isConnected } = useAccount();
   const { connectAsync, connectors, isPending, pendingConnector, error } = useConnect();
   const { disconnect } = useDisconnect();
+  const chainId = useChainId();
+  const { switchChainAsync, isPending: isSwitchingNetwork } = useSwitchChain();
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [connectorDialogOpen, setConnectorDialogOpen] = useState(false);
+
+  const isWrongNetwork = isConnected && chainId !== undefined && chainId !== TARGET_CHAIN_ID;
 
   const navItems = [
     { path: '/', label: 'Home' },
@@ -32,6 +37,18 @@ const Navbar = () => {
 
   const truncateAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
+  const handleSwitchNetwork = async () => {
+    try {
+      await switchChainAsync({ chainId: TARGET_CHAIN_ID });
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : `Unable to switch automatically. Please select ${TARGET_CHAIN_NAME} in your wallet.`,
+      );
+    }
   };
 
   const handleConnectClick = async (fromMobile = false) => {
@@ -59,6 +76,15 @@ const Navbar = () => {
   };
 
   const handleConnectorSelect = async (connector: (typeof connectors)[number]) => {
+    if (!connector.ready && connector.id !== 'walletConnect') {
+      toast.info(`${connector.name} looks inactive. We’ll try to connect anyway—make sure the extension is enabled.`);
+    }
+
+    if (connector.id === 'walletConnect' && !import.meta.env.VITE_WALLETCONNECT_PROJECT_ID) {
+      toast.error('Set VITE_WALLETCONNECT_PROJECT_ID in .env.local to enable WalletConnect.');
+      return;
+    }
+
     try {
       await connectAsync({ connector });
       setConnectorDialogOpen(false);
@@ -124,6 +150,21 @@ const Navbar = () => {
             <div className="hidden md:flex items-center gap-4">
               {isConnected ? (
                 <>
+                  {isWrongNetwork && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSwitchNetwork}
+                      disabled={isSwitchingNetwork}
+                      className="border-yellow-500/60 text-yellow-400 hover:bg-yellow-500/10"
+                    >
+                      {isSwitchingNetwork ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Switch Network'
+                      )}
+                    </Button>
+                  )}
                   <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg glass-card">
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     <span className="text-sm font-mono">{truncateAddress(address!)}</span>
@@ -204,6 +245,23 @@ const Navbar = () => {
                           <p className="text-xs text-muted-foreground mb-1">Connected</p>
                           <p className="text-sm font-mono">{truncateAddress(address!)}</p>
                         </div>
+                        {isWrongNetwork && (
+                          <Button
+                            onClick={handleSwitchNetwork}
+                            disabled={isSwitchingNetwork}
+                            className="w-full border-yellow-500/60 text-yellow-400"
+                            variant="outline"
+                          >
+                            {isSwitchingNetwork ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Switching...
+                              </>
+                            ) : (
+                              `Switch to ${TARGET_CHAIN_NAME}`
+                            )}
+                          </Button>
+                        )}
                         <Button
                           onClick={() => {
                             disconnect();
@@ -239,19 +297,18 @@ const Navbar = () => {
                 </DialogHeader>
                 <div className="space-y-3">
                   {connectors.map((connector) => {
-                    const isUnavailable = !connector.ready;
                     const isLoading = isPending && pendingConnector?.id === connector.id;
                     return (
                       <Button
                         key={connector.id}
                         variant="outline"
                         className="w-full justify-between"
-                        disabled={isUnavailable || isLoading}
+                        disabled={isLoading}
                         onClick={() => handleConnectorSelect(connector)}
                       >
                         <span>{connector.name}</span>
                         <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {isUnavailable && '(Unavailable)'}
+                          {!connector.ready && connector.id !== 'walletConnect' && '(Unavailable)'}
                           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                         </span>
                       </Button>

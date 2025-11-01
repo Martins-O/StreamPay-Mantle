@@ -30,7 +30,7 @@ const Footer = () => {
               <span className="text-xl font-bold gradient-text">StreamPay</span>
             </motion.div>
             <p className="text-sm text-muted-foreground">
-              Real-time crypto payment streaming on Mantle Testnet. Stream tokens by the second.
+              Real-time crypto payment streaming on the Mantle Sepolia Testnet. Stream tokens by the second.
             </p>
           </div>
 
@@ -79,7 +79,7 @@ const Footer = () => {
               </li>
               <li>
                 <a
-                  href="https://explorer.testnet.mantle.xyz"
+                  href="https://explorer.sepolia.mantle.xyz"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"

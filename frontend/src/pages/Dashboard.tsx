@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useAccount, useConnect } from 'wagmi';
+import { useEffect, useMemo, useState } from 'react';
+import { useAccount, useChainId, useConnect, useSwitchChain } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -12,9 +12,11 @@ import StreamChart from '@/components/StreamChart';
 import TransactionTracker from '@/components/TransactionTracker';
 import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
-import { useStreams, formatTokenAmount } from '@/lib/hooks';
+import { useStreams, useYieldInfo, formatTokenAmount } from '@/lib/hooks';
 import { toast } from 'sonner';
-import { IS_STREAM_MANAGER_CONFIGURED } from '@/lib/contract';
+import { IS_STREAM_MANAGER_CONFIGURED, STREAM_TOKEN_ADDRESS } from '@/lib/contract';
+import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 interface Transaction {
   hash: `0x${string}`;
@@ -26,8 +28,29 @@ const Dashboard = () => {
   const { address, isConnected } = useAccount();
   const { connectAsync, connectors, isPending: isConnecting, pendingConnector, error: connectError } = useConnect();
   const { streams, isLoading, error, refetch } = useStreams(address);
+  const chainId = useChainId();
+  const { switchChainAsync, isPending: isSwitchingNetwork } = useSwitchChain();
   const [totalStreamed, setTotalStreamed] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { processReminderSnapshot } = useNotifications();
+  const { totalManaged, vaultBalance, strategyInfo } = useYieldInfo(STREAM_TOKEN_ADDRESS);
+
+  const isWrongNetwork = useMemo(() => {
+    if (!isConnected) return false;
+    return chainId !== undefined && chainId !== null && chainId !== TARGET_CHAIN_ID;
+  }, [chainId, isConnected]);
+
+  const handleSwitchNetwork = async () => {
+    try {
+      await switchChainAsync({ chainId: TARGET_CHAIN_ID });
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : `Unable to switch automatically. Please change your wallet to ${TARGET_CHAIN_NAME}.`,
+      );
+    }
+  };
 
   useEffect(() => {
     if (streams.length > 0) {
@@ -39,6 +62,12 @@ const Dashboard = () => {
       setTotalStreamed(total);
     }
   }, [streams]);
+
+  useEffect(() => {
+    if (streams.length > 0) {
+      processReminderSnapshot(streams).catch((err) => console.error('Reminder processing failed', err));
+    }
+  }, [streams, processReminderSnapshot]);
 
   const activeStreams = streams.filter(s => s.isActive);
   const featuredStream = activeStreams.length > 0 ? activeStreams[0] : streams[0];
@@ -57,6 +86,15 @@ const Dashboard = () => {
 
   if (!isConnected) {
     const handleConnectorSelect = async (connector: (typeof connectors)[number]) => {
+      if (!connector.ready && connector.id !== 'walletConnect') {
+        toast.info(`${connector.name} looks inactive. We’ll try to connect anyway—make sure the extension is enabled.`);
+      }
+
+      if (connector.id === 'walletConnect' && !import.meta.env.VITE_WALLETCONNECT_PROJECT_ID) {
+        toast.error('Set VITE_WALLETCONNECT_PROJECT_ID in .env.local to enable WalletConnect.');
+        return;
+      }
+
       try {
         await connectAsync({ connector });
       } catch (err) {
@@ -95,14 +133,13 @@ const Dashboard = () => {
                 )}
 
                 {connectors.map((connector) => {
-                  const isUnavailable = !connector.ready;
                   const isLoading = isConnecting && pendingConnector?.id === connector.id;
 
                   return (
                     <Button
                       key={connector.id}
                       onClick={() => handleConnectorSelect(connector)}
-                      disabled={isUnavailable || isLoading}
+                      disabled={isLoading}
                       className="w-full"
                       size="lg"
                     >
@@ -112,7 +149,7 @@ const Dashboard = () => {
                         <Wallet className="mr-2 h-5 w-5" />
                       )}
                       {connector.name}
-                      {isUnavailable ? ' (Unavailable)' : ''}
+                      {!connector.ready && connector.id !== 'walletConnect' ? ' (Unavailable)' : ''}
                     </Button>
                   );
                 })}
@@ -143,7 +180,7 @@ const Dashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid md:grid-cols-3 gap-6"
+            className="grid md:grid-cols-4 gap-6"
           >
             <Card className="glass-card p-6">
               <div className="flex items-center gap-4">
@@ -189,6 +226,26 @@ const Dashboard = () => {
                 </div>
               </div>
             </Card>
+
+            <Card className="glass-card p-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <History className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Vault Managed</p>
+                  <p className="text-xs text-muted-foreground">Strategy: {strategyInfo?.[2] ? 'Active' : 'Idle'}</p>
+                  <p className="text-2xl font-bold font-mono">
+                    {totalManaged ? formatTokenAmount(totalManaged, streams[0]?.tokenDecimals ?? 18) : '0.0000'}
+                  </p>
+                </div>
+              </div>
+              {vaultBalance !== undefined && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  On-hand liquidity: {formatTokenAmount(vaultBalance, streams[0]?.tokenDecimals ?? 18)}
+                </p>
+              )}
+            </Card>
           </motion.div>
 
           {/* Main Content */}
@@ -198,7 +255,7 @@ const Dashboard = () => {
             transition={{ delay: 0.2 }}
           >
             {(!IS_STREAM_MANAGER_CONFIGURED || error) && (
-              <Card className="glass-card p-4 border-yellow-500/30 bg-yellow-500/5 mb-6">
+              <Card className="glass-card p-4 border-yellow-500/30 bg-yellow-500/5 mb-4">
                 <p className="text-sm text-foreground font-semibold mb-1">
                   {IS_STREAM_MANAGER_CONFIGURED
                     ? 'Unable to fetch streams'
@@ -209,6 +266,34 @@ const Dashboard = () => {
                     ? error?.message ?? 'Please try again later.'
                     : 'Set VITE_STREAM_MANAGER_ADDRESS (and related addresses) in your environment, then reload.'}
                 </p>
+              </Card>
+            )}
+
+            {isWrongNetwork && (
+              <Card className="glass-card p-4 border-yellow-500/40 bg-yellow-500/10 mb-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Wrong Network</p>
+                    <p className="text-xs text-muted-foreground">
+                      Switch your wallet to {TARGET_CHAIN_NAME} (chain ID {TARGET_CHAIN_ID}) to interact with StreamPay.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleSwitchNetwork}
+                    disabled={isSwitchingNetwork}
+                    size="sm"
+                    className="animated-gradient"
+                  >
+                    {isSwitchingNetwork ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Switching...
+                      </>
+                    ) : (
+                      'Switch Network'
+                    )}
+                  </Button>
+                </div>
               </Card>
             )}
 
@@ -244,6 +329,7 @@ const Dashboard = () => {
                     userAddress={address!}
                     onRefetch={refetch}
                     onTransactionSubmit={handleTransactionSubmit}
+                    isNetworkReady={!isWrongNetwork}
                   />
                 )}
               </TabsContent>
@@ -261,6 +347,7 @@ const Dashboard = () => {
                     streams={streams}
                     userAddress={address!}
                     onRefetch={refetch}
+                    isNetworkReady={!isWrongNetwork}
                     showHistory={true}
                   />
                 )}
@@ -270,6 +357,9 @@ const Dashboard = () => {
                 <CreateStreamForm
                   onSuccess={refetch}
                   onTransactionSubmit={handleTransactionSubmit}
+                  isNetworkReady={!isWrongNetwork}
+                  onSwitchNetwork={handleSwitchNetwork}
+                  isSwitchingNetwork={isSwitchingNetwork}
                 />
               </TabsContent>
 

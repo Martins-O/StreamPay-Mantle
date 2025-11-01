@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {StreamManager} from "../src/StreamManager.sol";
 import {MockERC20} from "../src/MockERC20.sol";
+import {MockYieldStrategy} from "./mocks/MockYieldStrategy.sol";
 
 contract StreamManagerTest is Test {
     StreamManager public streamManager;
@@ -25,17 +26,10 @@ contract StreamManagerTest is Test {
     );
 
     event StreamCanceled(
-        uint256 indexed streamId,
-        address indexed sender,
-        address indexed recipient,
-        uint256 remainingAmount
+        uint256 indexed streamId, address indexed sender, address indexed recipient, uint256 remainingAmount
     );
 
-    event Claimed(
-        uint256 indexed streamId,
-        address indexed recipient,
-        uint256 amount
-    );
+    event Claimed(uint256 indexed streamId, address indexed recipient, uint256 amount);
 
     function setUp() public {
         streamManager = new StreamManager();
@@ -55,7 +49,9 @@ contract StreamManagerTest is Test {
 
         vm.prank(sender);
         vm.expectEmit(true, true, true, true);
-        emit StreamCreated(1, sender, recipient, address(token), totalAmount, totalAmount / duration, block.timestamp, duration);
+        emit StreamCreated(
+            1, sender, recipient, address(token), totalAmount, totalAmount / duration, block.timestamp, duration
+        );
 
         uint256 streamId = streamManager.createStream(recipient, address(token), totalAmount, duration);
 
@@ -72,6 +68,9 @@ contract StreamManagerTest is Test {
         assertEq(stream.stopTime, 0);
         assertEq(stream.lastClaimed, block.timestamp);
         assertTrue(stream.isActive);
+        assertFalse(stream.isPaused);
+        assertEq(stream.pauseStart, 0);
+        assertEq(stream.pausedDuration, 0);
     }
 
     function testCreateStreamInvalidRecipient() public {
@@ -130,6 +129,7 @@ contract StreamManagerTest is Test {
         StreamManager.Stream memory stream = streamManager.getStream(streamId);
         assertEq(stream.lastClaimed, block.timestamp);
         assertEq(stream.claimedAmount, expectedAmount);
+        assertFalse(stream.isPaused);
     }
 
     function testClaimStreamNotRecipient() public {
@@ -183,6 +183,7 @@ contract StreamManagerTest is Test {
         assertFalse(stream.isActive);
         assertEq(stream.stopTime, block.timestamp);
         assertEq(stream.claimedAmount, expectedClaimAmount);
+        assertFalse(stream.isPaused);
     }
 
     function testCancelStreamNotSender() public {
@@ -251,6 +252,7 @@ contract StreamManagerTest is Test {
         StreamManager.Stream memory stream = streamManager.getStream(streamId);
         assertFalse(stream.isActive);
         assertEq(stream.claimedAmount, totalAmount);
+        assertFalse(stream.isPaused);
     }
 
     function testPauseUnpause() public {
@@ -265,5 +267,106 @@ contract StreamManagerTest is Test {
         vm.prank(sender);
         uint256 streamId = streamManager.createStream(recipient, address(token), 1000 * 1e6, 100);
         assertEq(streamId, 1);
+    }
+
+    function testPauseAndResumeStream() public {
+        uint256 totalAmount = 1000 * 1e6;
+        uint256 duration = 100;
+
+        vm.prank(sender);
+        uint256 streamId = streamManager.createStream(recipient, address(token), totalAmount, duration);
+
+        // advance half time
+        vm.warp(block.timestamp + 40);
+
+        vm.prank(sender);
+        streamManager.pauseStream(streamId);
+
+        StreamManager.Stream memory pausedStream = streamManager.getStream(streamId);
+        assertTrue(pausedStream.isPaused);
+
+        // Accrual while paused should be zero
+        vm.warp(block.timestamp + 10);
+        assertEq(streamManager.getStreamableAmount(streamId), 0);
+
+        // Resume the stream
+        vm.prank(sender);
+        streamManager.resumeStream(streamId);
+
+        StreamManager.Stream memory resumedStream = streamManager.getStream(streamId);
+        assertFalse(resumedStream.isPaused);
+        assertGt(resumedStream.pausedDuration, 0);
+
+        // advance time and ensure claim works
+        vm.warp(block.timestamp + 10);
+        vm.prank(recipient);
+        streamManager.claim(streamId);
+    }
+
+    function testPauseStreamOnlySender() public {
+        vm.prank(sender);
+        uint256 streamId = streamManager.createStream(recipient, address(token), 1000 * 1e6, 100);
+
+        vm.prank(recipient);
+        vm.expectRevert("Only sender can pause");
+        streamManager.pauseStream(streamId);
+
+        vm.prank(sender);
+        streamManager.pauseStream(streamId);
+
+        vm.prank(recipient);
+        vm.expectRevert("Only sender can resume");
+        streamManager.resumeStream(streamId);
+    }
+
+    function testCreateStreamsBatch() public {
+        StreamManager.BatchCreateParams[] memory params = new StreamManager.BatchCreateParams[](2);
+        params[0] = StreamManager.BatchCreateParams({
+            recipient: recipient,
+            token: address(token),
+            totalAmount: 500 * 1e6,
+            duration: 50
+        });
+        params[1] = StreamManager.BatchCreateParams({
+            recipient: address(0x3),
+            token: address(token),
+            totalAmount: 250 * 1e6,
+            duration: 25
+        });
+
+        vm.prank(sender);
+        uint256[] memory streamIds = streamManager.createStreamsBatch(params);
+
+        assertEq(streamIds.length, 2);
+        assertEq(streamIds[0], 1);
+        assertEq(streamIds[1], 2);
+
+        StreamManager.Stream memory first = streamManager.getStream(streamIds[0]);
+        assertEq(first.totalAmount, params[0].totalAmount);
+        assertFalse(first.isPaused);
+
+        StreamManager.Stream memory second = streamManager.getStream(streamIds[1]);
+        assertEq(second.recipient, params[1].recipient);
+        assertEq(second.duration, params[1].duration);
+    }
+
+    function testYieldStrategyIntegration() public {
+        MockYieldStrategy strategy = new MockYieldStrategy();
+
+        streamManager.configureYieldStrategy(address(token), address(strategy), 1000);
+
+        vm.prank(sender);
+        uint256 streamId = streamManager.createStream(recipient, address(token), 1000 * 1e6, 100);
+        assertEq(streamId, 1);
+
+        // most funds should be held by the strategy after allocation
+        assertGt(token.balanceOf(address(strategy)), 0);
+
+        vm.warp(block.timestamp + 10);
+        vm.prank(recipient);
+        streamManager.claim(streamId);
+
+        // Withdrawn amount should reduce strategy holdings
+        assertLt(token.balanceOf(address(strategy)), 1000 * 1e6);
     }
 }

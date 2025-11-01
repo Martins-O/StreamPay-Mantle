@@ -17,6 +17,9 @@
 - Comprehensive test suite: 30 tests, 100% pass rate
 - Gas-optimized operations (~358k gas for stream creation)
 - Reentrancy protection and emergency pause functionality
+- Sender-controlled pause/resume with accurate accrual bookkeeping
+- Batch payroll creation via single transaction
+- Yield strategy hooks with configurable reserve ratios
 
 ### 2. Frontend Application (100% Complete)
 - ✅ **Vite + React 18** application with TypeScript
@@ -32,6 +35,8 @@
 - Live stream charts and analytics
 - Responsive mobile-first design
 - Comprehensive error handling
+- Batch payroll workflow with aggregate approvals
+- Push Protocol and WalletConnect notifications for lifecycle events
 
 ### 3. Development Infrastructure (100% Complete)
 - ✅ **Foundry** development framework
@@ -81,6 +86,7 @@ Vite SPA
 - Emergency pause functionality
 - Safe math operations (Solidity 0.8+)
 - Multi-signature ready architecture
+- Yield strategy reserve ratios protect liquidity for ongoing claims
 
 ### User Experience
 - One-click wallet connection
@@ -104,12 +110,14 @@ Vite SPA
 - **Subscriptions**: Monthly service payments
 - **Payroll**: Employee salary streaming
 - **Freelance**: Project-based payments
+- **Pause/Resume**: Demonstrate mid-stream suspension with notifications
+- **Batch Payroll**: Create multi-recipient schedules in one transaction
 
 ## 🚀 Deployment Ready
 
 ### Mantle L2 Testnet
 - **Network ID**: 5003
-- **RPC**: https://rpc.testnet.mantle.xyz
+- **RPC**: https://mantle-sepolia.drpc.org
 - **Explorer**: https://explorer.testnet.mantle.xyz
 - **Faucet**: https://faucet.testnet.mantle.xyz
 
@@ -167,8 +175,8 @@ cd frontend && npm run build
 ## 🔮 Future Roadmap
 
 ### Phase 2 Features
-- [ ] **Pause/Resume Streams** - Temporary stream halting
-- [ ] **Batch Payroll** - Multiple streams in one transaction
+- [x] **Pause/Resume Streams** - Temporary stream halting
+- [x] **Batch Payroll** - Multiple streams in one transaction
 - [ ] **NFT Stream Receipts** - Non-fungible stream representation
 - [ ] **Multi-token Support** - Various ERC-20 token streaming
 - [ ] **Stream Templates** - Reusable stream configurations
@@ -176,7 +184,7 @@ cd frontend && npm run build
 ### Phase 3 Enhancements
 - [ ] **Cross-chain Streaming** - Multi-network support
 - [ ] **Governance Token** - Decentralized protocol management
-- [ ] **Yield Integration** - Earn yield on streamed tokens
+- [x] **Yield Integration** - Earn yield on streamed tokens
 - [ ] **Advanced Analytics** - Comprehensive usage metrics
 - [ ] **API Integration** - Third-party service integration
 
