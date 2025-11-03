@@ -234,17 +234,14 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Vault Managed</p>
-                  <p className="text-xs text-muted-foreground">Strategy: {strategyInfo?.[2] ? 'Active' : 'Idle'}</p>
                   <p className="text-2xl font-bold font-mono">
                     {totalManaged ? formatTokenAmount(totalManaged, streams[0]?.tokenDecimals ?? 18) : '0.0000'}
                   </p>
+                  {strategyInfo?.[2] && (
+                    <p className="text-xs text-muted-foreground">Strategy earning yield</p>
+                  )}
                 </div>
               </div>
-              {vaultBalance !== undefined && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  On-hand liquidity: {formatTokenAmount(vaultBalance, streams[0]?.tokenDecimals ?? 18)}
-                </p>
-              )}
             </Card>
           </motion.div>
 
