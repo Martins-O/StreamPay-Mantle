@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { Wallet } from 'ethers';
 import { PushAPI } from '@pushprotocol/restapi';
-import NotifyClient from '@walletconnect/notify-client';
+import { NotifyClient } from '@walletconnect/notify-client';
 import type { Stream } from '@/lib/contract';
 import { formatTokenAmount } from '@/lib/hooks';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
