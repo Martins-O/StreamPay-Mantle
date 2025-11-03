@@ -6,6 +6,7 @@ solc_version = "0.8.30"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
+via_ir = true
 
 [rpc_endpoints]
 mantle_testnet = "https://mantle-sepolia.drpc.org"

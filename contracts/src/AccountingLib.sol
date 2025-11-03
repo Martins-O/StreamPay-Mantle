@@ -28,6 +28,12 @@ library AccountingLib {
         }
 
         uint256 streamEndTime = startTime + duration;
+        if (pausedDuration > 0) {
+            streamEndTime += pausedDuration;
+            if (streamEndTime < startTime) {
+                streamEndTime = type(uint256).max;
+            }
+        }
         uint256 effectiveTime = timestamp;
 
         if (isPaused && pauseStart != 0 && pauseStart < effectiveTime) {

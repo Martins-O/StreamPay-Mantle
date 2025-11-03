@@ -107,9 +107,10 @@ contract StreamManagerTest is Test {
 
         vm.prank(sender);
         uint256 streamId = streamManager.createStream(recipient, address(token), totalAmount, duration);
+        uint256 startTime = block.timestamp;
 
         // Fast forward 10 seconds
-        vm.warp(block.timestamp + 10);
+        vm.warp(startTime + 10);
 
         uint256 expectedAmount = (totalAmount * 10) / duration; // 10 seconds worth
         uint256 streamableAmount = streamManager.getStreamableAmount(streamId);
@@ -275,9 +276,10 @@ contract StreamManagerTest is Test {
 
         vm.prank(sender);
         uint256 streamId = streamManager.createStream(recipient, address(token), totalAmount, duration);
+        uint256 startTime = block.timestamp;
 
         // advance half time
-        vm.warp(block.timestamp + 40);
+        vm.warp(startTime + 40);
 
         vm.prank(sender);
         streamManager.pauseStream(streamId);
@@ -286,7 +288,7 @@ contract StreamManagerTest is Test {
         assertTrue(pausedStream.isPaused);
 
         // Accrual while paused should be zero
-        vm.warp(block.timestamp + 10);
+        vm.warp(startTime + 50);
         assertEq(streamManager.getStreamableAmount(streamId), 0);
 
         // Resume the stream
@@ -298,7 +300,14 @@ contract StreamManagerTest is Test {
         assertGt(resumedStream.pausedDuration, 0);
 
         // advance time and ensure claim works
-        vm.warp(block.timestamp + 10);
+        uint256 resumeTime = block.timestamp;
+
+        uint256 claimTime = resumeTime + 10;
+        vm.warp(claimTime);
+
+        uint256 streamableAfterResume = streamManager.getStreamableAmount(streamId);
+        assertGt(streamableAfterResume, 0);
+
         vm.prank(recipient);
         streamManager.claim(streamId);
     }
