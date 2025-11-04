@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, TrendingUp, Activity, History, ShieldAlert, Loader2 } from 'lucide-react';
+import { Wallet, TrendingUp, Activity, History, ShieldAlert, Loader2, Download } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import StreamTable from '@/components/StreamTable';
 import CreateStreamForm from '@/components/CreateStreamForm';
@@ -82,6 +82,73 @@ const Dashboard = () => {
 
   const handleRemoveTransaction = (hash: string) => {
     setTransactions(prev => prev.filter(tx => tx.hash !== hash));
+  };
+
+  const handleExportStreamsCsv = () => {
+    if (streams.length === 0) {
+      toast.info('No streams to export yet. Create a stream to populate data.');
+      return;
+    }
+
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+
+    const header = [
+      'Stream ID',
+      'Sender',
+      'Recipient',
+      'Token',
+      'Total Amount',
+      'Claimed Amount',
+      'Claimable Amount',
+      'Start Time (UTC)',
+      'Duration (secs)',
+      'Status',
+    ];
+
+    const rows = streams.map(stream => {
+      const decimals = stream.tokenDecimals ?? 18;
+      const tokenLabel = stream.tokenSymbol ?? 'TOKEN';
+      const status = !stream.isActive
+        ? 'Ended'
+        : stream.isPaused
+          ? 'Paused'
+          : 'Active';
+      const startIso = stream.startTime > 0n
+        ? new Date(Number(stream.startTime) * 1000).toISOString()
+        : '';
+      const claimable = stream.streamableAmount
+        ? formatTokenAmount(stream.streamableAmount, decimals)
+        : '0';
+
+      const values = [
+        stream.id.toString(),
+        stream.sender,
+        stream.recipient,
+        `${stream.token} (${tokenLabel})`,
+        formatTokenAmount(stream.totalAmount, decimals),
+        formatTokenAmount(stream.claimedAmount, decimals),
+        claimable,
+        startIso,
+        stream.duration.toString(),
+        status,
+      ];
+
+      return values.map(value => escapeCsv(value)).join(',');
+    });
+
+    const csvContent = [header.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = `streampay-streams-${Date.now()}.csv`;
+    downloadLink.style.visibility = 'hidden';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
+
+    toast.success('Stream data exported as CSV');
   };
 
   if (!isConnected) {
@@ -313,6 +380,21 @@ const Dashboard = () => {
               </TabsList>
 
               <TabsContent value="streams" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Manage live streams and export your payment history.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportStreamsCsv}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                </div>
+
                 {isLoading ? (
                   <Card className="glass-card p-12 text-center">
                     <div className="animate-pulse space-y-4">

@@ -10,7 +10,8 @@ This file tracks the major product features shipped so far, their health, and th
 | Token approval flow | In-app allowance management so senders can approve the StreamManager without leaving the dashboard. | 90% | Works end-to-end; could add unlimited approval toggle and clearer messaging.
 | Vault & yield wiring | Deposits route to StreamVault with optional strategy push for idle capital. | 70% | Strategy configuration manual; no UI to rebalance or surface yield APY yet.
 | Notifications | Push/WalletConnect hooks broadcast key events (create, claim, pause, resume). | 60% | Stubs exist; needs production channel + granular opt-in controls.
-| Analytics dashboard | Live candlestick chart with hourly/daily views of streamed vs projected flow. | 85% | Animates in real time; consider historical storage + export to CSV.
+| Analytics dashboard | Live candlestick chart with hourly/daily views of streamed vs projected flow. | 85% | Animates in real time; next up: historical snapshots & CSV scheduling.
+| CSV export | One-click download of current stream inventory as CSV for off-chain accounting. | 100% | Includes status, claimable balance, timing, and token metadata columns.
 | Templates & batch creation | Pre-built templates and spreadsheet-like entry for streaming multiple recipients. | 75% | Lacks per-recipient duration and better error surfacing when parsing rows.
 
 ## Upcoming / Stretch Goals
