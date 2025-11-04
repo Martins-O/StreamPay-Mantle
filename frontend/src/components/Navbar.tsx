@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, Droplets, Menu, Moon, Sun, Loader2 } from 'lucide-react';
+import { Wallet, Menu, Moon, Sun, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { motion } from 'framer-motion';
@@ -15,6 +15,44 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
+
+const LogoMark = () => (
+  <svg
+    className="h-8 w-8"
+    viewBox="0 0 48 48"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <defs>
+      <linearGradient id="streampayLogoGradient" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#22d3ee" />
+        <stop offset="45%" stopColor="#818cf8" />
+        <stop offset="100%" stopColor="#a855f7" />
+      </linearGradient>
+      <linearGradient id="streampayLogoWave" x1="10" y1="18" x2="38" y2="32" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#f8fafc" />
+        <stop offset="100%" stopColor="#cbd5f5" />
+      </linearGradient>
+    </defs>
+    <rect x="6" y="6" width="36" height="36" rx="18" fill="url(#streampayLogoGradient)" />
+    <path
+      d="M12 27.5C16.5 24 19.5 24 24 27.5C28.5 31 31.5 31 36 27.5"
+      stroke="url(#streampayLogoWave)"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16 22C18.5 19.5 20.5 18.5 24 18.5C27.5 18.5 29.5 19.5 32 22"
+      stroke="rgba(248, 250, 252, 0.6)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 const Navbar = () => {
   const location = useLocation();
@@ -102,10 +140,14 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <Droplets className="h-8 w-8 text-primary animate-pulse-glow" />
-            <span className="text-2xl font-bold gradient-text">StreamPay</span>
-            <span className="text-sm text-muted-foreground">Mantle</span>
+          <Link to="/" className="flex items-center gap-3 group">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/40">
+              <LogoMark />
+            </span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-lg font-semibold tracking-tight text-foreground">StreamPay Mantle</span>
+              <span className="text-xs uppercase tracking-[0.35em] text-muted-foreground group-hover:text-primary transition-colors">Real-time payments</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
