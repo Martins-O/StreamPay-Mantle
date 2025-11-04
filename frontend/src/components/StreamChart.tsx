@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import type { Stream } from '@/lib/contract';
 import {
   ComposedChart,
@@ -21,6 +22,8 @@ interface StreamChartProps {
   stream: Stream;
 }
 
+type ViewMode = 'hourly' | 'daily';
+
 type ChartPoint = {
   time: string;
   projected: number;
@@ -33,39 +36,47 @@ type ChartPoint = {
   wick: [number, number];
   direction: 'up' | 'down';
   isCurrent: boolean;
+  change: number;
+  startSeconds: number;
+  endSeconds: number;
 };
 
-const formatElapsedLabel = (seconds: number) => {
-  if (seconds >= 86_400) {
-    return `${Math.floor(seconds / 86_400)}d`;
-  }
-  if (seconds >= 3_600) {
-    return `${Math.floor(seconds / 3_600)}h`;
-  }
-  if (seconds >= 60) {
-    return `${Math.floor(seconds / 60)}m`;
-  }
-  return `${seconds}s`;
-};
+const VIEW_OPTIONS: Array<{ value: ViewMode; label: string }> = [
+  { value: 'hourly', label: 'Hourly rate' },
+  { value: 'daily', label: 'Daily rate' },
+];
 
 const StreamChart = ({ stream }: StreamChartProps) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('hourly');
   const decimals = stream.tokenDecimals ?? 18;
-
   const totalAmount = useMemo(
     () => parseFloat(formatTokenAmount(stream.totalAmount, decimals)),
     [stream.totalAmount, decimals],
   );
+  const totalDurationSeconds = useMemo(() => Number(stream.duration), [stream.duration]);
 
-  const points = useMemo(() => {
-    const steps = 30;
-    const durationSeconds = Number(stream.duration);
-    const segments = Array.from({ length: steps + 1 }, (_, index) => {
-      const fraction = steps === 0 ? 0 : index / steps;
-      const seconds = Math.round(durationSeconds * fraction);
-      return { fraction, seconds };
+  const bucketSize = viewMode === 'hourly' ? 3_600 : 86_400;
+
+  const buckets = useMemo(() => {
+    const count = Math.max(1, Math.ceil(totalDurationSeconds / Math.max(bucketSize, 1)));
+    return Array.from({ length: count }, (_, index) => {
+      const start = Math.min(index * bucketSize, totalDurationSeconds);
+      const rawEnd = Math.min((index + 1) * bucketSize, totalDurationSeconds);
+      const end = index === count - 1 ? totalDurationSeconds : rawEnd;
+      const label = viewMode === 'hourly' ? `Hour ${index + 1}` : `Day ${index + 1}`;
+      const startFraction = totalDurationSeconds > 0 ? start / totalDurationSeconds : 0;
+      const endFraction = totalDurationSeconds > 0 ? end / totalDurationSeconds : 0;
+
+      return {
+        index,
+        label,
+        start,
+        end,
+        startFraction,
+        endFraction,
+      };
     });
-    return segments;
-  }, [stream.duration]);
+  }, [bucketSize, totalDurationSeconds, viewMode]);
 
   const calculateProgress = useCallback(() => {
     const nowSeconds = Math.floor(Date.now() / 1000);
@@ -102,73 +113,70 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   }, [stream]);
 
   const buildChartData = useCallback(() => {
+    if (totalDurationSeconds <= 0) {
+      return [
+        {
+          time: VIEW_OPTIONS.find(option => option.value === viewMode)?.label ?? 'Period',
+          projected: totalAmount,
+          open: 0,
+          close: totalAmount,
+          high: totalAmount,
+          low: 0,
+          base: 0,
+          body: totalAmount,
+          wick: [0, 0],
+          direction: 'up',
+          isCurrent: true,
+          change: totalAmount,
+          startSeconds: 0,
+          endSeconds: 0,
+        },
+      ] satisfies ChartPoint[];
+    }
+
     const { fraction, elapsedSeconds, streamedAmount } = calculateProgress();
     const currentActual = parseFloat(formatTokenAmount(streamedAmount, decimals));
 
-    let previousClose = 0;
-    let currentIncluded = false;
+    let currentMarked = false;
 
-    const baseData: ChartPoint[] = points.map(point => {
-      const projectedValue = totalAmount * point.fraction;
-      const actualFraction = Math.min(point.fraction, fraction);
-      const closeValue = totalAmount * actualFraction;
-      const openValue = previousClose;
+    return buckets.map((bucket, index) => {
+      const actualStartSeconds = Math.min(bucket.start, elapsedSeconds);
+      const actualEndSeconds = Math.min(bucket.end, elapsedSeconds);
 
-      const highValue = Math.max(projectedValue, closeValue, openValue);
-      const lowValue = Math.min(closeValue, openValue);
+      const openValue = totalAmount * (actualStartSeconds / totalDurationSeconds);
+      const closeValue = totalAmount * (actualEndSeconds / totalDurationSeconds);
+      const projectedCloseValue = totalAmount * bucket.endFraction;
+
+      const highValue = Math.max(openValue, closeValue, projectedCloseValue);
+      const lowValue = Math.min(openValue, closeValue, projectedCloseValue);
+      const bodyBase = Math.min(openValue, closeValue);
       const bodyHeight = Math.abs(closeValue - openValue);
-      const upperWick = highValue - Math.max(closeValue, openValue);
-      const lowerWick = Math.max(closeValue, openValue) - lowValue;
+      const upperWick = highValue - Math.max(openValue, closeValue);
+      const lowerWick = bodyBase - lowValue;
 
-      const isCurrent = !currentIncluded && point.fraction >= fraction;
+      const isCurrent = !currentMarked && (elapsedSeconds <= bucket.end || index === buckets.length - 1);
       if (isCurrent) {
-        currentIncluded = true;
+        currentMarked = true;
       }
 
-      previousClose = closeValue;
-
       return {
-        time: formatElapsedLabel(point.seconds),
-        projected: projectedValue,
+        time: bucket.label,
+        projected: totalAmount * bucket.endFraction,
         open: openValue,
-        close: closeValue,
-        high: highValue,
+        close: index === buckets.length - 1 ? currentActual : closeValue,
+        high: index === buckets.length - 1 ? Math.max(highValue, currentActual) : highValue,
         low: lowValue,
-        base: Math.min(closeValue, openValue),
+        base: bodyBase,
         body: bodyHeight,
-        wick: [lowerWick, upperWick],
+        wick: [Math.max(lowerWick, 0), Math.max(upperWick, 0)],
         direction: closeValue >= openValue ? 'up' : 'down',
         isCurrent,
+        change: Math.max(closeValue - openValue, 0),
+        startSeconds: bucket.start,
+        endSeconds: bucket.end,
       } satisfies ChartPoint;
     });
-
-    if (!currentIncluded) {
-      const projectedValue = totalAmount * fraction;
-      const openValue = previousClose;
-      const closeValue = currentActual;
-      const highValue = Math.max(projectedValue, closeValue, openValue);
-      const lowValue = Math.min(closeValue, openValue);
-      const bodyHeight = Math.abs(closeValue - openValue);
-      const upperWick = highValue - Math.max(closeValue, openValue);
-      const lowerWick = Math.max(closeValue, openValue) - lowValue;
-
-      baseData.push({
-        time: formatElapsedLabel(elapsedSeconds),
-        projected: projectedValue,
-        open: openValue,
-        close: closeValue,
-        high: highValue,
-        low: lowValue,
-        base: Math.min(closeValue, openValue),
-        body: bodyHeight,
-        wick: [lowerWick, upperWick],
-        direction: closeValue >= openValue ? 'up' : 'down',
-        isCurrent: true,
-      });
-    }
-
-    return baseData;
-  }, [calculateProgress, points, totalAmount, decimals]);
+  }, [buckets, calculateProgress, decimals, totalAmount, totalDurationSeconds, viewMode]);
 
   const [chartData, setChartData] = useState<ChartPoint[]>(() => buildChartData());
 
@@ -179,31 +187,45 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setChartData(buildChartData());
-    }, 1000);
+    }, 1_000);
 
     return () => clearInterval(interval);
   }, [buildChartData]);
 
   return (
     <Card className="glass-card p-6">
-      <h3 className="text-lg font-semibold mb-4">Stream Progress</h3>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-lg font-semibold">Stream Progress</h3>
+        <div className="flex gap-2">
+          {VIEW_OPTIONS.map(option => (
+            <Button
+              key={option.value}
+              size="sm"
+              variant={viewMode === option.value ? 'default' : 'outline'}
+              onClick={() => setViewMode(option.value)}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
-          <XAxis
-            dataKey="time"
-            stroke="hsl(215, 20%, 65%)"
-            style={{ fontSize: '12px' }}
-          />
-          <YAxis
-            stroke="hsl(215, 20%, 65%)"
-            style={{ fontSize: '12px' }}
-          />
-          <Tooltip content={<CandleTooltip />} />
+          <XAxis dataKey="time" stroke="hsl(215, 20%, 65%)" style={{ fontSize: '12px' }} />
+          <YAxis stroke="hsl(215, 20%, 65%)" style={{ fontSize: '12px' }} />
+          <Tooltip content={props => <CandleTooltip viewMode={viewMode} {...props} />} />
           <Legend wrapperStyle={{ fontSize: '12px' }} iconType="circle" />
 
-          <Bar dataKey="base" stackId="progress" fill="transparent" isAnimationActive={false} />
-          <Bar dataKey="body" stackId="progress" barSize={16} radius={[3, 3, 3, 3]}>
+          <Bar dataKey="base" stackId="progress" fill="transparent" isAnimationActive={false} hide />
+          <Bar
+            dataKey="body"
+            stackId="progress"
+            barSize={16}
+            radius={[3, 3, 3, 3]}
+            name="Actual streamed"
+            legendType="rect"
+          >
             {chartData.map((entry, index) => {
               const fill = entry.direction === 'up'
                 ? 'hsl(171, 100%, 45%)'
@@ -237,7 +259,9 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   );
 };
 
-const CandleTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+type CandleTooltipProps = TooltipProps<number, string> & { viewMode: ViewMode };
+
+const CandleTooltip = ({ active, payload, viewMode }: CandleTooltipProps) => {
   if (!active || !payload || payload.length === 0) {
     return null;
   }
@@ -247,14 +271,37 @@ const CandleTooltip = ({ active, payload }: TooltipProps<number, string>) => {
     return null;
   }
 
+  const periodLabel = viewMode === 'hourly' ? 'hour' : 'day';
+  const streamedThisPeriod = Math.max(candle.close - candle.open, 0);
+
+  const formatSeconds = (seconds: number) => {
+    if (seconds === 0) {
+      return '0s';
+    }
+
+    const days = Math.floor(seconds / 86_400);
+    const hours = Math.floor((seconds % 86_400) / 3_600);
+    const minutes = Math.floor((seconds % 3_600) / 60);
+
+    if (days > 0) {
+      return `${days}d ${hours}h`;
+    }
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
   return (
     <div className="rounded-md border border-primary/40 bg-background/95 p-3 text-xs shadow-lg">
       <p className="font-semibold">{candle.time}</p>
+      <p>Range: {formatSeconds(candle.startSeconds)} → {formatSeconds(candle.endSeconds)}</p>
       <p>Open: {candle.open.toFixed(4)}</p>
       <p>Close: {candle.close.toFixed(4)}</p>
       <p>High: {candle.high.toFixed(4)}</p>
       <p>Low: {candle.low.toFixed(4)}</p>
-      <p>Projected: {candle.projected.toFixed(4)}</p>
+      <p>{`Streamed this ${periodLabel}: ${streamedThisPeriod.toFixed(4)}`}</p>
+      <p>Projected total: {candle.projected.toFixed(4)}</p>
     </div>
   );
 };
