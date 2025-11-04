@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useAccount, useChainId, useConnect, useSwitchChain } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,7 +8,6 @@ import { Wallet, TrendingUp, Activity, History, ShieldAlert, Loader2, Download }
 import Navbar from '@/components/Navbar';
 import StreamTable from '@/components/StreamTable';
 import CreateStreamForm from '@/components/CreateStreamForm';
-import StreamChart from '@/components/StreamChart';
 import TransactionTracker from '@/components/TransactionTracker';
 import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
@@ -18,11 +17,15 @@ import { IS_STREAM_MANAGER_CONFIGURED, STREAM_TOKEN_ADDRESS } from '@/lib/contra
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
 import { useNotifications } from '@/contexts/useNotifications';
 
+const StreamChart = lazy(() => import('@/components/StreamChart'));
+
 interface Transaction {
   hash: `0x${string}`;
   description: string;
   timestamp: number;
 }
+
+type TabKey = 'streams' | 'history' | 'create' | 'analytics';
 
 const Dashboard = () => {
   const { address, isConnected } = useAccount();
@@ -30,6 +33,7 @@ const Dashboard = () => {
   const { streams, isLoading, error, refetch } = useStreams(address);
   const chainId = useChainId();
   const { switchChainAsync, isPending: isSwitchingNetwork } = useSwitchChain();
+  const [activeTab, setActiveTab] = useState<TabKey>('streams');
   const [totalStreamed, setTotalStreamed] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { processReminderSnapshot } = useNotifications();
@@ -361,7 +365,7 @@ const Dashboard = () => {
               </Card>
             )}
 
-            <Tabs defaultValue="streams" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)} className="space-y-6">
               <TabsList className="glass-card border border-border/50 p-1 grid grid-cols-4 w-full">
                 <TabsTrigger value="streams" className="data-[state=active]:bg-primary/20">
                   Active
@@ -444,7 +448,22 @@ const Dashboard = () => {
 
               {featuredStream && (
                 <TabsContent value="analytics">
-                  <StreamChart stream={featuredStream} />
+                  {activeTab === 'analytics' ? (
+                    <Suspense
+                      fallback={(
+                        <Card className="glass-card p-12 text-center space-y-3">
+                          <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+                          <p className="text-sm text-muted-foreground">Loading analytics...</p>
+                        </Card>
+                      )}
+                    >
+                      <StreamChart stream={featuredStream} />
+                    </Suspense>
+                  ) : (
+                    <Card className="glass-card p-6 text-sm text-muted-foreground">
+                      Open the Analytics tab to load real-time insights for the highlighted stream.
+                    </Card>
+                  )}
                 </TabsContent>
               )}
             </Tabs>

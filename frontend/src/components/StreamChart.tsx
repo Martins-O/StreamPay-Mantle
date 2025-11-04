@@ -1,21 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import type { Stream } from '@/lib/contract';
-import {
-  ComposedChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  Bar,
-  Cell,
-  Line,
-  ErrorBar,
-  type TooltipProps,
-} from 'recharts';
 import { formatTokenAmount } from '@/lib/hooks';
 
 interface StreamChartProps {
@@ -24,27 +11,12 @@ interface StreamChartProps {
 
 type ViewMode = 'hourly' | 'daily';
 
-type ChartPoint = {
-  time: string;
-  projected: number;
-  open: number;
-  close: number;
-  high: number;
-  low: number;
-  base: number;
-  body: number;
-  wick: [number, number];
-  direction: 'up' | 'down';
-  isCurrent: boolean;
-  change: number;
-  startSeconds: number;
-  endSeconds: number;
-};
-
 const VIEW_OPTIONS: Array<{ value: ViewMode; label: string }> = [
-  { value: 'hourly', label: 'Hourly rate' },
-  { value: 'daily', label: 'Daily rate' },
+  { value: 'hourly', label: 'Hourly' },
+  { value: 'daily', label: 'Daily' },
 ];
+
+const UPDATE_INTERVAL_MS = 4_000;
 
 const StreamChart = ({ stream }: StreamChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('hourly');
@@ -53,35 +25,15 @@ const StreamChart = ({ stream }: StreamChartProps) => {
     () => parseFloat(formatTokenAmount(stream.totalAmount, decimals)),
     [stream.totalAmount, decimals],
   );
-  const totalDurationSeconds = useMemo(() => Number(stream.duration), [stream.duration]);
+  const totalDurationSeconds = useMemo(
+    () => Math.max(Number(stream.duration), 1),
+    [stream.duration],
+  );
 
-  const bucketSize = viewMode === 'hourly' ? 3_600 : 86_400;
-
-  const buckets = useMemo(() => {
-    const count = Math.max(1, Math.ceil(totalDurationSeconds / Math.max(bucketSize, 1)));
-    return Array.from({ length: count }, (_, index) => {
-      const start = Math.min(index * bucketSize, totalDurationSeconds);
-      const rawEnd = Math.min((index + 1) * bucketSize, totalDurationSeconds);
-      const end = index === count - 1 ? totalDurationSeconds : rawEnd;
-      const label = viewMode === 'hourly' ? `Hour ${index + 1}` : `Day ${index + 1}`;
-      const startFraction = totalDurationSeconds > 0 ? start / totalDurationSeconds : 0;
-      const endFraction = totalDurationSeconds > 0 ? end / totalDurationSeconds : 0;
-
-      return {
-        index,
-        label,
-        start,
-        end,
-        startFraction,
-        endFraction,
-      };
-    });
-  }, [bucketSize, totalDurationSeconds, viewMode]);
-
-  const calculateProgress = useCallback(() => {
+  const computeProgress = useCallback(() => {
     const nowSeconds = Math.floor(Date.now() / 1000);
-    const endTime = Number(stream.startTime + stream.duration);
-    const cappedNow = Math.min(nowSeconds, endTime);
+    const adjustedEnd = Number(stream.startTime + stream.duration);
+    const cappedNow = Math.min(nowSeconds, adjustedEnd);
 
     let reference = BigInt(cappedNow);
     if (stream.isPaused && stream.pauseStart > 0n && stream.pauseStart < reference) {
@@ -100,102 +52,141 @@ const StreamChart = ({ stream }: StreamChartProps) => {
       elapsed = stream.duration;
     }
 
-    const progressFraction = stream.duration > 0n ? Number(elapsed) / Number(stream.duration) : 0;
+    const elapsedSeconds = Number(elapsed);
+    const fraction = totalDurationSeconds > 0 ? Math.min(Math.max(Number(elapsed) / totalDurationSeconds, 0), 1) : 0;
+
     const streamedAmount = stream.duration > 0n
       ? (stream.totalAmount * elapsed) / stream.duration
+      : stream.totalAmount;
+    const claimableAmount = streamedAmount > stream.claimedAmount
+      ? streamedAmount - stream.claimedAmount
       : 0n;
+    const remainingToStream = stream.totalAmount > streamedAmount
+      ? stream.totalAmount - streamedAmount
+      : 0n;
+    const remainingToClaim = stream.totalAmount > stream.claimedAmount
+      ? stream.totalAmount - stream.claimedAmount
+      : 0n;
+    const totalProgress = stream.totalAmount > 0n
+      ? Number((streamedAmount * 10000n) / stream.totalAmount) / 100
+      : 0;
 
     return {
-      fraction: Math.min(Math.max(progressFraction, 0), 1),
-      elapsedSeconds: Number(elapsed),
+      elapsedSeconds,
+      fraction,
       streamedAmount,
+      claimableAmount,
+      remainingToStream,
+      remainingToClaim,
+      progressPercent: Math.min(Math.max(totalProgress, 0), 100),
+      isNotStarted: nowSeconds < Number(stream.startTime),
     };
-  }, [stream]);
+  }, [stream, totalDurationSeconds]);
 
-  const buildChartData = useCallback(() => {
-    if (totalDurationSeconds <= 0) {
-      return [
-        {
-          time: VIEW_OPTIONS.find(option => option.value === viewMode)?.label ?? 'Period',
-          projected: totalAmount,
-          open: 0,
-          close: totalAmount,
-          high: totalAmount,
-          low: 0,
-          base: 0,
-          body: totalAmount,
-          wick: [0, 0],
-          direction: 'up',
-          isCurrent: true,
-          change: totalAmount,
-          startSeconds: 0,
-          endSeconds: 0,
-        },
-      ] satisfies ChartPoint[];
-    }
+  const [snapshot, setSnapshot] = useState(() => computeProgress());
 
-    const { fraction, elapsedSeconds, streamedAmount } = calculateProgress();
-    const currentActual = parseFloat(formatTokenAmount(streamedAmount, decimals));
+  useEffect(() => {
+    setSnapshot(computeProgress());
+  }, [computeProgress]);
 
-    let currentMarked = false;
-
-    return buckets.map((bucket, index) => {
-      const actualStartSeconds = Math.min(bucket.start, elapsedSeconds);
-      const actualEndSeconds = Math.min(bucket.end, elapsedSeconds);
-
-      const openValue = totalAmount * (actualStartSeconds / totalDurationSeconds);
-      const closeValue = totalAmount * (actualEndSeconds / totalDurationSeconds);
-      const projectedCloseValue = totalAmount * bucket.endFraction;
-
-      const highValue = Math.max(openValue, closeValue, projectedCloseValue);
-      const lowValue = Math.min(openValue, closeValue, projectedCloseValue);
-      const bodyBase = Math.min(openValue, closeValue);
-      const bodyHeight = Math.abs(closeValue - openValue);
-      const upperWick = highValue - Math.max(openValue, closeValue);
-      const lowerWick = bodyBase - lowValue;
-
-      const isCurrent = !currentMarked && (elapsedSeconds <= bucket.end || index === buckets.length - 1);
-      if (isCurrent) {
-        currentMarked = true;
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (!document.hidden) {
+        setSnapshot(computeProgress());
       }
+    }, UPDATE_INTERVAL_MS);
 
-      return {
-        time: bucket.label,
-        projected: totalAmount * bucket.endFraction,
-        open: openValue,
-        close: index === buckets.length - 1 ? currentActual : closeValue,
-        high: index === buckets.length - 1 ? Math.max(highValue, currentActual) : highValue,
-        low: lowValue,
-        base: bodyBase,
-        body: bodyHeight,
-        wick: [Math.max(lowerWick, 0), Math.max(upperWick, 0)],
-        direction: closeValue >= openValue ? 'up' : 'down',
-        isCurrent,
-        change: Math.max(closeValue - openValue, 0),
-        startSeconds: bucket.start,
-        endSeconds: bucket.end,
-      } satisfies ChartPoint;
-    });
-  }, [buckets, calculateProgress, decimals, totalAmount, totalDurationSeconds, viewMode]);
+    return () => window.clearInterval(id);
+  }, [computeProgress]);
 
-  const [chartData, setChartData] = useState<ChartPoint[]>(() => buildChartData());
+  const totalFormatted = useMemo(
+    () => formatTokenAmount(stream.totalAmount, decimals),
+    [stream.totalAmount, decimals],
+  );
+  const streamedFormatted = useMemo(
+    () => formatTokenAmount(snapshot.streamedAmount, decimals),
+    [snapshot.streamedAmount, decimals],
+  );
+  const claimableFormatted = useMemo(
+    () => formatTokenAmount(snapshot.claimableAmount, decimals),
+    [snapshot.claimableAmount, decimals],
+  );
+  const claimedFormatted = useMemo(
+    () => formatTokenAmount(stream.claimedAmount, decimals),
+    [stream.claimedAmount, decimals],
+  );
+  const remainingFormatted = useMemo(
+    () => formatTokenAmount(snapshot.remainingToStream, decimals),
+    [snapshot.remainingToStream, decimals],
+  );
 
-  useEffect(() => {
-    setChartData(buildChartData());
-  }, [buildChartData]);
+  const totalAmountNumber = useMemo(() => parseFloat(totalFormatted), [totalFormatted]);
+  const ratePerSecond = totalDurationSeconds > 0 ? totalAmountNumber / totalDurationSeconds : 0;
+  const ratePerHour = ratePerSecond * 3_600;
+  const ratePerDay = ratePerHour * 24;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setChartData(buildChartData());
-    }, 1_000);
+  const elapsedSeconds = snapshot.elapsedSeconds;
+  const elapsedLabel = elapsedSeconds === 0
+    ? 'Not started'
+    : formatDuration(elapsedSeconds);
+  const timeUntilStart = snapshot.isNotStarted
+    ? Math.max(Number(stream.startTime) - Math.floor(Date.now() / 1000), 0)
+    : 0;
+  const remainingDurationSeconds = stream.isPaused
+    ? null
+    : Number(stream.duration > BigInt(elapsedSeconds)
+      ? stream.duration - BigInt(elapsedSeconds)
+      : 0n);
+  const remainingLabel = stream.isPaused
+    ? 'Paused'
+    : snapshot.progressPercent >= 100
+      ? 'Completed'
+      : remainingDurationSeconds !== null
+        ? formatDuration(remainingDurationSeconds)
+        : '—';
 
-    return () => clearInterval(interval);
-  }, [buildChartData]);
+  const completionTimestampSeconds = Number(stream.startTime + stream.duration + stream.pausedDuration);
+  const completionEta = new Date(completionTimestampSeconds * 1000);
+
+  let statusLabel = 'Live';
+  let statusTone = 'text-primary';
+  if (!stream.isActive || snapshot.progressPercent >= 100) {
+    statusLabel = 'Completed';
+    statusTone = 'text-emerald-400';
+  } else if (stream.isPaused) {
+    statusLabel = 'Paused';
+    statusTone = 'text-amber-400';
+  } else if (snapshot.isNotStarted) {
+    statusLabel = 'Scheduled';
+    statusTone = 'text-sky-400';
+  }
+
+  const etaLabel = (() => {
+    if (!stream.isActive || snapshot.progressPercent >= 100) {
+      return 'Stream fully settled';
+    }
+    if (stream.isPaused) {
+      return 'Resume the stream to continue accrual';
+    }
+    if (snapshot.isNotStarted && timeUntilStart > 0) {
+      return `Starts in ${formatDuration(timeUntilStart)}`;
+    }
+    return `Projected completion: ${completionEta.toLocaleString()}`;
+  })();
+
+  const rateLabel = viewMode === 'hourly'
+    ? `${ratePerHour.toFixed(4)} per hour`
+    : `${ratePerDay.toFixed(4)} per day`;
+
+  const progressPercentRounded = Math.min(Math.max(Number(snapshot.progressPercent.toFixed(1)), 0), 100);
 
   return (
-    <Card className="glass-card p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold">Stream Progress</h3>
+    <Card className="glass-card p-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold">Stream Analytics</h3>
+          <p className="text-sm text-muted-foreground">Live snapshot of the highlighted stream</p>
+        </div>
         <div className="flex gap-2">
           {VIEW_OPTIONS.map(option => (
             <Button
@@ -209,101 +200,77 @@ const StreamChart = ({ stream }: StreamChartProps) => {
           ))}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={320}>
-        <ComposedChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(217, 33%, 17%)" />
-          <XAxis dataKey="time" stroke="hsl(215, 20%, 65%)" style={{ fontSize: '12px' }} />
-          <YAxis stroke="hsl(215, 20%, 65%)" style={{ fontSize: '12px' }} />
-          <Tooltip content={props => <CandleTooltip viewMode={viewMode} {...props} />} />
-          <Legend wrapperStyle={{ fontSize: '12px' }} iconType="circle" />
 
-          <Bar dataKey="base" stackId="progress" fill="transparent" isAnimationActive={false} hide />
-          <Bar
-            dataKey="body"
-            stackId="progress"
-            barSize={16}
-            radius={[3, 3, 3, 3]}
-            name="Actual streamed"
-            legendType="rect"
-          >
-            {chartData.map((entry, index) => {
-              const fill = entry.direction === 'up'
-                ? 'hsl(171, 100%, 45%)'
-                : 'hsl(5, 85%, 55%)';
-              const stroke = entry.isCurrent ? 'hsl(51, 100%, 65%)' : fill;
-              return (
-                <Cell
-                  key={`${entry.time}-${index}`}
-                  fill={fill}
-                  stroke={stroke}
-                  strokeWidth={entry.isCurrent ? 2 : 1}
-                />
-              );
-            })}
-            <ErrorBar dataKey="wick" width={0} stroke="hsl(210, 20%, 75%)" strokeWidth={2} direction="y" />
-          </Bar>
+      <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Progress</p>
+              <p className="text-3xl font-semibold">{progressPercentRounded.toFixed(1)}%</p>
+            </div>
+            <span className={`text-sm font-medium ${statusTone}`}>{statusLabel}</span>
+          </div>
+          <Progress value={progressPercentRounded} className="h-2" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <StatBlock label="Elapsed" value={elapsedLabel} />
+            <StatBlock label="Remaining" value={remainingLabel} />
+            <StatBlock label="Claimable now" value={`${claimableFormatted}`} emphasis />
+            <StatBlock label="Claimed to date" value={claimedFormatted} />
+          </div>
+        </div>
 
-          <Line
-            type="monotone"
-            dataKey="projected"
-            stroke="hsl(215, 20%, 50%)"
-            strokeWidth={2}
-            strokeDasharray="6 4"
-            dot={false}
-            isAnimationActive={false}
-            name="Projected"
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+        <div className="space-y-3 rounded-xl border border-border/60 bg-background/60 p-4">
+          <StatBlock label="Total amount" value={totalFormatted} />
+          <StatBlock label="Streamed so far" value={streamedFormatted} />
+          <StatBlock label="Remaining to stream" value={remainingFormatted} />
+          <StatBlock label="Payout cadence" value={rateLabel} />
+          <p className="text-xs text-muted-foreground">{etaLabel}</p>
+        </div>
+      </div>
     </Card>
   );
 };
 
-type CandleTooltipProps = TooltipProps<number, string> & { viewMode: ViewMode };
+interface StatBlockProps {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+}
 
-const CandleTooltip = ({ active, payload, viewMode }: CandleTooltipProps) => {
-  if (!active || !payload || payload.length === 0) {
-    return null;
+const StatBlock = ({ label, value, emphasis = false }: StatBlockProps) => (
+  <div className="rounded-lg border border-border/50 bg-background/40 p-3">
+    <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+    <p className={`mt-1 text-sm ${emphasis ? 'font-semibold text-primary' : 'text-foreground'}`}>{value}</p>
+  </div>
+);
+
+const formatDuration = (seconds: number) => {
+  if (seconds <= 0) {
+    return '0s';
   }
 
-  const candle = payload[0]?.payload as ChartPoint | undefined;
-  if (!candle) {
-    return null;
+  const units: Array<{ label: string; value: number }> = [
+    { label: 'd', value: 86_400 },
+    { label: 'h', value: 3_600 },
+    { label: 'm', value: 60 },
+    { label: 's', value: 1 },
+  ];
+
+  const parts: string[] = [];
+  let remainder = seconds;
+
+  for (const unit of units) {
+    if (remainder >= unit.value) {
+      const count = Math.floor(remainder / unit.value);
+      parts.push(`${count}${unit.label}`);
+      remainder -= count * unit.value;
+    }
+    if (parts.length === 2) {
+      break;
+    }
   }
 
-  const periodLabel = viewMode === 'hourly' ? 'hour' : 'day';
-  const streamedThisPeriod = Math.max(candle.close - candle.open, 0);
-
-  const formatSeconds = (seconds: number) => {
-    if (seconds === 0) {
-      return '0s';
-    }
-
-    const days = Math.floor(seconds / 86_400);
-    const hours = Math.floor((seconds % 86_400) / 3_600);
-    const minutes = Math.floor((seconds % 3_600) / 60);
-
-    if (days > 0) {
-      return `${days}d ${hours}h`;
-    }
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
-  return (
-    <div className="rounded-md border border-primary/40 bg-background/95 p-3 text-xs shadow-lg">
-      <p className="font-semibold">{candle.time}</p>
-      <p>Range: {formatSeconds(candle.startSeconds)} → {formatSeconds(candle.endSeconds)}</p>
-      <p>Open: {candle.open.toFixed(4)}</p>
-      <p>Close: {candle.close.toFixed(4)}</p>
-      <p>High: {candle.high.toFixed(4)}</p>
-      <p>Low: {candle.low.toFixed(4)}</p>
-      <p>{`Streamed this ${periodLabel}: ${streamedThisPeriod.toFixed(4)}`}</p>
-      <p>Projected total: {candle.projected.toFixed(4)}</p>
-    </div>
-  );
+  return parts.join(' ');
 };
 
 export default StreamChart;
