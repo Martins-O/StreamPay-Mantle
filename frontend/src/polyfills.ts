@@ -1,16 +1,27 @@
 import { Buffer } from "safe-buffer";
 
-if (typeof globalThis.global === "undefined") {
-  (globalThis as any).global = globalThis;
+type PolyfilledGlobal = typeof globalThis & {
+  global?: typeof globalThis;
+  Buffer?: typeof Buffer;
+  process?: {
+    env: Record<string, string>;
+    nextTick: (cb: (...args: unknown[]) => void, ...args: unknown[]) => void;
+  };
+};
+
+const globalObject = globalThis as PolyfilledGlobal;
+
+if (typeof globalObject.global === "undefined") {
+  globalObject.global = globalObject;
 }
 
-if (typeof globalThis.Buffer === "undefined") {
-  (globalThis as any).Buffer = Buffer;
+if (typeof globalObject.Buffer === "undefined") {
+  globalObject.Buffer = Buffer;
 }
 
-if (typeof globalThis.process === "undefined") {
-  (globalThis as any).process = {
+if (typeof globalObject.process === "undefined") {
+  globalObject.process = {
     env: {},
-    nextTick: (cb: (...args: any[]) => void, ...args: any[]) => queueMicrotask(() => cb(...args)),
+    nextTick: (cb: (...args: unknown[]) => void, ...args: unknown[]) => queueMicrotask(() => cb(...args)),
   };
 }

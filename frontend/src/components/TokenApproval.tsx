@@ -63,21 +63,25 @@ const TokenApproval = ({ tokenAddress, amount, userAddress, onApprovalComplete }
     }
   }, [allowance, amount, onApprovalComplete]);
 
+  type WriteParams = Parameters<typeof writeContractAsync>[0];
+
   const handleApprove = async () => {
     try {
-      await writeContractAsync({
+      const request: WriteParams = {
         address: tokenAddress,
         abi: ERC20_ABI,
         functionName: 'approve',
         args: [STREAM_MANAGER_ADDRESS, amount],
-      } as any);
+      };
+      await writeContractAsync(request);
 
       toast.success('Approval submitted');
       setTimeout(() => {
         refetch();
       }, 2000);
-    } catch (error: any) {
-      toast.error(error?.message || 'Approval failed');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Approval failed';
+      toast.error(message);
     }
   };
 

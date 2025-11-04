@@ -305,7 +305,7 @@ const CreateStreamForm = ({
     }
 
     try {
-      let durationInSeconds = convertToSeconds(BigInt(duration));
+      const durationInSeconds = convertToSeconds(BigInt(duration));
       if (durationInSeconds === 0n) {
         toast.error('Duration must be greater than zero');
         return;
@@ -418,9 +418,10 @@ const CreateStreamForm = ({
 
       resetFormState();
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating stream:', error);
-      toast.error(error?.message || 'Failed to create stream');
+      const message = error instanceof Error ? error.message : 'Failed to create stream';
+      toast.error(message);
     }
   };
 
@@ -605,7 +606,7 @@ const CreateStreamForm = ({
                   <Label htmlFor="timeUnit">Time Unit</Label>
                   <Select
                     value={timeUnit}
-                    onValueChange={(value: any) => {
+                    onValueChange={(value: 'seconds' | 'minutes' | 'hours' | 'days') => {
                       setTimeUnit(value);
                       invalidateApproval();
                     }}
