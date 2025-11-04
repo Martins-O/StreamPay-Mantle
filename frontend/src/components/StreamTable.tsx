@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import LiveCounter from './LiveCounter';
 import { TARGET_CHAIN_NAME } from '@/lib/web3';
-import { useNotifications } from '@/contexts/NotificationContext';
+import { useNotifications } from '@/contexts/useNotifications';
 
 interface StreamTableProps {
   streams: Stream[];

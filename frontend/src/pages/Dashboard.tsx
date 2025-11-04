@@ -16,7 +16,7 @@ import { useStreams, useYieldInfo, formatTokenAmount } from '@/lib/hooks';
 import { toast } from 'sonner';
 import { IS_STREAM_MANAGER_CONFIGURED, STREAM_TOKEN_ADDRESS } from '@/lib/contract';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
-import { useNotifications } from '@/contexts/NotificationContext';
+import { useNotifications } from '@/contexts/useNotifications';
 
 interface Transaction {
   hash: `0x${string}`;

@@ -22,7 +22,7 @@ import TokenApproval from './TokenApproval';
 import StreamTemplates from './StreamTemplates';
 import { ERC20_ABI, IS_STREAM_MANAGER_CONFIGURED, STREAM_TOKEN_ADDRESS, IS_STREAM_TOKEN_CONFIGURED } from '@/lib/contract';
 import { TARGET_CHAIN_NAME } from '@/lib/web3';
-import { useNotifications } from '@/contexts/NotificationContext';
+import { useNotifications } from '@/contexts/useNotifications';
 
 type BatchRow = {
   recipient: string;

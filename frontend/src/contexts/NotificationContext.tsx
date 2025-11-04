@@ -1,25 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Wallet } from 'ethers';
 import { PushAPI } from '@pushprotocol/restapi';
 import { NotifyClient } from '@walletconnect/notify-client';
-import type { Stream } from '@/lib/contract';
 import { formatTokenAmount } from '@/lib/hooks';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
-
-interface StreamEventPayload {
-  type: 'create' | 'batch-create' | 'pause' | 'resume' | 'cancel' | 'claim';
-  stream: Stream;
-  actor?: `0x${string}`;
-  recipients?: `0x${string}`[];
-  count?: number;
-}
-
-interface NotificationContextValue {
-  notifyStreamEvent: (payload: StreamEventPayload) => Promise<void>;
-  processReminderSnapshot: (streams: Stream[]) => Promise<void>;
-}
-
-const NotificationContext = createContext<NotificationContextValue | undefined>(undefined);
+import {
+  NotificationContext,
+  type NotificationContextValue,
+  type StreamEventPayload,
+} from './NotificationContextBase';
 
 const PUSH_CHANNEL_ADDRESS = import.meta.env.VITE_PUSH_CHANNEL_ADDRESS as string | undefined;
 const PUSH_CHANNEL_PK = import.meta.env.VITE_PUSH_CHANNEL_PK as string | undefined;
@@ -31,7 +20,7 @@ const WC_NOTIFY_SECRET = import.meta.env.VITE_WALLETCONNECT_NOTIFY_SECRET as str
 const chainPrefix = `eip155:${TARGET_CHAIN_ID}`;
 const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://streampay.example';
 
-export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
+export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const pushSignerRef = useRef<Wallet | null>(null);
   const pushInitializedRef = useRef(false);
   const notifyClientRef = useRef<NotifyClient | null>(null);
@@ -221,12 +210,4 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   return (
     <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
   );
-};
-
-export const useNotifications = () => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotifications must be used within NotificationProvider');
-  }
-  return context;
 };

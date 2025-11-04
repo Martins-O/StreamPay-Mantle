@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/useTheme';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   Dialog,
