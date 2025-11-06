@@ -32,11 +32,11 @@ const HowItWorks = () => {
     {
       number: '02',
       icon: Coins,
-      title: 'Select Token & Amount',
-      description: 'Choose the ERC-20 token you want to stream and specify the total amount.',
+      title: 'Select Tokens & Amounts',
+      description: 'Choose one or many ERC-20 tokens to stream and specify how much should unlock over time.',
       details: [
-        'Support for any ERC-20 token on Mantle',
-        'Real-time balance checking',
+        'Multi-token support in a single stream',
+        'Real-time balance and allowance checking',
         'Token approval handled automatically',
       ],
     },
@@ -55,11 +55,11 @@ const HowItWorks = () => {
       number: '04',
       icon: Play,
       title: 'Start Streaming',
-      description: 'Confirm the transaction and watch tokens flow in real-time to your recipient.',
+      description: 'Confirm the transaction and mint an NFT receipt that streams value in real-time to the recipient.',
       details: [
         'Low gas fees on Mantle L2',
-        'Instant stream activation',
-        'Real-time tracking dashboard',
+        'Instant stream activation with NFT ownership proof',
+        'Recipients can transfer or batch claim with the NFT',
       ],
     },
   ];
@@ -80,8 +80,20 @@ const HowItWorks = () => {
     {
       icon: CheckCircle2,
       title: 'Flexible Control',
-      description: 'Senders can cancel streams anytime to reclaim unstreamed tokens. Recipients can claim accrued tokens whenever they want.',
+      description: 'Senders can top up, extend, or cancel streams anytime. Recipients claim accrued tokens on demand or transfer their NFT receipt.',
       color: 'text-green-500',
+    },
+    {
+      icon: Droplets,
+      title: 'Transferable NFT Receipts',
+      description: 'Every stream mints an ERC-721 receipt that proves ownership. Hand it off to another wallet or marketplace to reroute future cashflow instantly.',
+      color: 'text-amber-500',
+    },
+    {
+      icon: Coins,
+      title: 'Batch Payroll Claims',
+      description: 'Recipients aggregate multiple NFT streams and claim them in one transaction—perfect for payroll and treasury ops.',
+      color: 'text-rose-500',
     },
   ];
 
@@ -125,15 +137,15 @@ const HowItWorks = () => {
     },
     {
       step: 'Create Stream',
-      description: 'StreamManager creates stream and locks tokens in StreamVault',
+      description: 'StreamManager locks tokens in StreamVault and mints an ERC-721 receipt to the recipient',
     },
     {
       step: 'Real-Time Calculation',
-      description: 'Smart contract calculates claimable amount based on elapsed time',
+      description: 'Accounting keeps per-token balances in sync every second, including pauses and top-ups',
     },
     {
-      step: 'Claim or Cancel',
-      description: 'Recipient claims accumulated tokens or sender cancels stream',
+      step: 'Claim, Transfer, or Adjust',
+      description: 'NFT holder batches claims or transfers ownership while the sender can extend, top up, or cancel',
     },
   ];
 
@@ -164,7 +176,7 @@ const HowItWorks = () => {
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Discover how continuous payment streaming revolutionizes the way value flows on the blockchain.
+              Discover how multi-token, NFT-backed payment streaming lets teams top up, transfer, and batch claim value without waiting for payroll cycles.
             </p>
           </motion.div>
         </div>

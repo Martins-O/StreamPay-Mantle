@@ -20,7 +20,13 @@ import {
 } from '@/components/ui/dialog';
 import TokenApproval from './TokenApproval';
 import StreamTemplates from './StreamTemplates';
-import { ERC20_ABI, IS_STREAM_MANAGER_CONFIGURED, STREAM_TOKEN_ADDRESS, IS_STREAM_TOKEN_CONFIGURED } from '@/lib/contract';
+import {
+  ERC20_ABI,
+  IS_STREAM_MANAGER_CONFIGURED,
+  STREAM_TOKEN_ADDRESS,
+  IS_STREAM_TOKEN_CONFIGURED,
+} from '@/lib/contract';
+import type { Stream } from '@/lib/contract';
 import { TARGET_CHAIN_NAME } from '@/lib/web3';
 import { useNotifications } from '@/contexts/useNotifications';
 
@@ -28,6 +34,43 @@ type BatchRow = {
   recipient: string;
   amount: string;
 };
+
+const buildSyntheticStream = ({
+  sender,
+  recipient,
+  duration,
+  tokens,
+}: {
+  sender: `0x${string}`;
+  recipient: `0x${string}`;
+  duration: bigint;
+  tokens: Array<{
+    token: `0x${string}`;
+    amount: bigint;
+    decimals: number;
+    symbol?: string;
+  }>;
+}): Stream => ({
+  id: 0n,
+  sender,
+  recipient,
+  startTime: BigInt(Math.floor(Date.now() / 1000)),
+  duration,
+  stopTime: 0n,
+  lastClaimed: 0n,
+  isActive: true,
+  isPaused: false,
+  pauseStart: 0n,
+  pausedDuration: 0n,
+  tokens: tokens.map((token) => ({
+    token: token.token,
+    totalAmount: token.amount,
+    claimedAmount: 0n,
+    claimableAmount: 0n,
+    tokenDecimals: token.decimals,
+    tokenSymbol: token.symbol,
+  })),
+});
 
 interface CreateStreamFormProps {
   onSuccess: () => void;
@@ -330,27 +373,23 @@ const CreateStreamForm = ({
         toast.success('Stream created successfully!');
 
         if (address) {
+          const syntheticStream = buildSyntheticStream({
+            sender: address as `0x${string}`,
+            recipient: receiver as `0x${string}`,
+            duration: durationInSeconds,
+            tokens: [
+              {
+                token: streamTokenAddress,
+                amount: totalAmount,
+                decimals: resolvedTokenDecimals,
+                symbol: tokenSymbol,
+              },
+            ],
+          });
+
           await notifyStreamEvent({
             type: 'create',
-            stream: {
-              id: 0n,
-              sender: address as `0x${string}`,
-              recipient: receiver as `0x${string}`,
-              token: streamTokenAddress,
-              totalAmount,
-              claimedAmount: 0n,
-              startTime: BigInt(Math.floor(Date.now() / 1000)),
-              duration: durationInSeconds,
-              stopTime: 0n,
-              lastClaimed: 0n,
-              isActive: true,
-              isPaused: false,
-              pauseStart: 0n,
-              pausedDuration: 0n,
-              streamableAmount: 0n,
-              tokenDecimals: resolvedTokenDecimals,
-              tokenSymbol,
-            },
+            stream: syntheticStream,
             actor: address as `0x${string}`,
           });
         }
@@ -365,10 +404,12 @@ const CreateStreamForm = ({
           throw new Error(`Invalid recipient address in row ${index + 1}`);
         }
 
+        const parsedAmount = parseUnits(row.amount, resolvedTokenDecimals);
+
         return {
           recipient: row.recipient as `0x${string}`,
-          token: streamTokenAddress,
-          totalAmount: parseUnits(row.amount, resolvedTokenDecimals),
+          tokens: [streamTokenAddress],
+          totalAmounts: [parsedAmount],
           duration: durationInSeconds,
         };
       });
@@ -389,27 +430,22 @@ const CreateStreamForm = ({
       toast.success(`Created ${params.length} streams successfully!`);
 
       if (address) {
+        const first = params[0];
+        const syntheticStream = buildSyntheticStream({
+          sender: address as `0x${string}`,
+          recipient: first.recipient,
+          duration: first.duration,
+          tokens: first.tokens.map((tokenAddress, idx) => ({
+            token: tokenAddress,
+            amount: first.totalAmounts[idx] ?? 0n,
+            decimals: resolvedTokenDecimals,
+            symbol: tokenSymbol,
+          })),
+        });
+
         await notifyStreamEvent({
           type: 'batch-create',
-          stream: {
-            id: 0n,
-            sender: address as `0x${string}`,
-            recipient: params[0].recipient,
-            token: streamTokenAddress,
-            totalAmount: params.reduce((acc, item) => acc + item.totalAmount, 0n),
-            claimedAmount: 0n,
-            startTime: BigInt(Math.floor(Date.now() / 1000)),
-            duration: params[0].duration,
-            stopTime: 0n,
-            lastClaimed: 0n,
-            isActive: true,
-            isPaused: false,
-            pauseStart: 0n,
-            pausedDuration: 0n,
-            streamableAmount: 0n,
-            tokenDecimals: resolvedTokenDecimals,
-            tokenSymbol,
-          },
+          stream: syntheticStream,
           actor: address as `0x${string}`,
           recipients: params.map((p) => p.recipient),
           count: params.length,

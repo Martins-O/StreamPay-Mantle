@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { useAccount, useChainId, useConnect, useSwitchChain } from 'wagmi';
+import { useAccount, useChainId, useConnect, useSwitchChain, useReadContracts } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -11,9 +11,16 @@ import CreateStreamForm from '@/components/CreateStreamForm';
 import TransactionTracker from '@/components/TransactionTracker';
 import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
-import { useStreams, useYieldInfo, formatTokenAmount } from '@/lib/hooks';
+import { useStreams, formatTokenAmount } from '@/lib/hooks';
 import { toast } from 'sonner';
-import { IS_STREAM_MANAGER_CONFIGURED, STREAM_TOKEN_ADDRESS } from '@/lib/contract';
+import {
+  ERC20_ABI,
+  IS_STREAM_MANAGER_CONFIGURED,
+  STREAM_TOKEN_ADDRESS,
+  STREAM_VAULT_ADDRESS,
+  STREAM_VAULT_ABI,
+  ZERO_ADDRESS,
+} from '@/lib/contract';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
 import { useNotifications } from '@/contexts/useNotifications';
 
@@ -34,10 +41,139 @@ const Dashboard = () => {
   const chainId = useChainId();
   const { switchChainAsync, isPending: isSwitchingNetwork } = useSwitchChain();
   const [activeTab, setActiveTab] = useState<TabKey>('streams');
-  const [totalStreamed, setTotalStreamed] = useState(0);
+  const [totalStreamed, setTotalStreamed] = useState('0');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { processReminderSnapshot } = useNotifications();
-  const { totalManaged, vaultBalance, strategyInfo } = useYieldInfo(STREAM_TOKEN_ADDRESS);
+
+  const trackedTokens = useMemo(() => {
+    const entries = new Map<string, { address: `0x${string}`; decimals?: number; symbol?: string }>();
+    for (const stream of streams) {
+      for (const token of stream.tokens) {
+        const key = token.token.toLowerCase();
+        if (!entries.has(key)) {
+          entries.set(key, {
+            address: token.token,
+            decimals: token.tokenDecimals,
+            symbol: token.tokenSymbol,
+          });
+        }
+      }
+    }
+
+    if (STREAM_TOKEN_ADDRESS !== ZERO_ADDRESS) {
+      const key = STREAM_TOKEN_ADDRESS.toLowerCase();
+      if (!entries.has(key)) {
+        entries.set(key, {
+          address: STREAM_TOKEN_ADDRESS,
+        });
+      }
+    }
+
+    return Array.from(entries.values());
+  }, [streams]);
+
+  const tokensNeedingMetadata = useMemo(
+    () => trackedTokens.filter((token) => token.decimals === undefined || !token.symbol),
+    [trackedTokens],
+  );
+
+  const metadataContracts = useMemo(() => {
+    if (tokensNeedingMetadata.length === 0) {
+      return [] as const;
+    }
+
+    return tokensNeedingMetadata.flatMap((token) => ([
+      {
+        address: token.address,
+        abi: ERC20_ABI,
+        functionName: 'decimals',
+      } as const,
+      {
+        address: token.address,
+        abi: ERC20_ABI,
+        functionName: 'symbol',
+      } as const,
+    ]));
+  }, [tokensNeedingMetadata]);
+
+  const { data: metadataResults } = useReadContracts({
+    contracts: metadataContracts,
+    query: {
+      enabled: metadataContracts.length > 0,
+    },
+  });
+
+  const metadataMap = useMemo(() => {
+    const map = new Map<string, { decimals?: number; symbol?: string }>();
+    if (!metadataResults || tokensNeedingMetadata.length === 0) {
+      return map;
+    }
+
+    for (let i = 0; i < tokensNeedingMetadata.length; i++) {
+      const token = tokensNeedingMetadata[i];
+      const decimalsResult = metadataResults[i * 2];
+      const symbolResult = metadataResults[i * 2 + 1];
+
+      const decimals = decimalsResult?.status === 'success'
+        ? Number(decimalsResult.result as bigint)
+        : undefined;
+      const symbol = symbolResult?.status === 'success'
+        ? (symbolResult.result as string)
+        : undefined;
+
+      map.set(token.address.toLowerCase(), {
+        decimals,
+        symbol,
+      });
+    }
+
+    return map;
+  }, [metadataResults, tokensNeedingMetadata]);
+
+  const resolvedTokens = useMemo(() => trackedTokens.map((token) => {
+    const metadata = metadataMap.get(token.address.toLowerCase());
+    const decimals = metadata?.decimals ?? token.decimals ?? 18;
+    const symbol = metadata?.symbol ?? token.symbol ?? `${token.address.slice(0, 6)}...${token.address.slice(-4)}`;
+
+    return {
+      address: token.address,
+      decimals,
+      symbol,
+    };
+  }), [trackedTokens, metadataMap]);
+
+  const vaultContracts = useMemo(() => {
+    if (STREAM_VAULT_ADDRESS === ZERO_ADDRESS || resolvedTokens.length === 0) {
+      return [] as const;
+    }
+
+    return resolvedTokens.map((token) => ({
+      address: STREAM_VAULT_ADDRESS,
+      abi: STREAM_VAULT_ABI,
+      functionName: 'getTotalManaged',
+      args: [token.address],
+    }) as const);
+  }, [resolvedTokens]);
+
+  const { data: vaultResults } = useReadContracts({
+    contracts: vaultContracts,
+    query: {
+      enabled: STREAM_VAULT_ADDRESS !== ZERO_ADDRESS && vaultContracts.length > 0,
+      refetchOnWindowFocus: false,
+    },
+  });
+
+  const vaultSummaries = useMemo(() => resolvedTokens.map((token, index) => {
+    const vaultEntry = vaultResults?.[index];
+    const totalManaged = vaultEntry?.status === 'success' ? (vaultEntry.result as bigint) : 0n;
+
+    return {
+      address: token.address,
+      decimals: token.decimals,
+      symbol: token.symbol,
+      totalManaged,
+    };
+  }), [resolvedTokens, vaultResults]);
 
   const isWrongNetwork = useMemo(() => {
     if (!isConnected) return false;
@@ -57,14 +193,39 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (streams.length > 0) {
-      const total = streams.reduce((acc, stream) => {
-        const decimals = stream.tokenDecimals ?? 18;
-        const claimed = parseFloat(formatTokenAmount(stream.claimedAmount, decimals));
-        return acc + (Number.isFinite(claimed) ? claimed : 0);
-      }, 0);
-      setTotalStreamed(total);
+    if (streams.length === 0) {
+      setTotalStreamed('0');
+      return;
     }
+
+    const tokenTotals = new Map<string, { amount: bigint; decimals: number; symbol: string }>();
+
+    for (const stream of streams) {
+      for (const token of stream.tokens) {
+        const key = token.token.toLowerCase();
+        const symbol = token.tokenSymbol ?? `${token.token.slice(0, 6)}...${token.token.slice(-4)}`;
+        const decimals = token.tokenDecimals ?? 18;
+        const entry = tokenTotals.get(key);
+        if (entry) {
+          entry.amount += token.claimedAmount;
+          entry.decimals = decimals;
+          entry.symbol = symbol;
+        } else {
+          tokenTotals.set(key, { amount: token.claimedAmount, decimals, symbol });
+        }
+      }
+    }
+
+    if (tokenTotals.size === 0) {
+      setTotalStreamed('0');
+      return;
+    }
+
+    const summary = Array.from(tokenTotals.values())
+      .map(({ amount, decimals, symbol }) => `${formatTokenAmount(amount, decimals)} ${symbol}`)
+      .join(' · ');
+
+    setTotalStreamed(summary);
   }, [streams]);
 
   useEffect(() => {
@@ -75,6 +236,16 @@ const Dashboard = () => {
 
   const activeStreams = streams.filter(s => s.isActive);
   const featuredStream = activeStreams.length > 0 ? activeStreams[0] : streams[0];
+
+  const primaryTokenMeta = useMemo(() => {
+    if (STREAM_TOKEN_ADDRESS === ZERO_ADDRESS) {
+      return undefined;
+    }
+
+    const target = STREAM_TOKEN_ADDRESS.toLowerCase();
+    const hit = resolvedTokens.find((token) => token.address.toLowerCase() === target);
+    return hit;
+  }, [resolvedTokens]);
 
   const handleTransactionSubmit = (hash: string, description: string) => {
     setTransactions(prev => [...prev, {
@@ -100,18 +271,17 @@ const Dashboard = () => {
       'Stream ID',
       'Sender',
       'Recipient',
-      'Token',
+      'Token Address',
+      'Token Symbol',
       'Total Amount',
       'Claimed Amount',
-      'Claimable Amount',
+      'Current Claimable',
       'Start Time (UTC)',
       'Duration (secs)',
       'Status',
     ];
 
-    const rows = streams.map(stream => {
-      const decimals = stream.tokenDecimals ?? 18;
-      const tokenLabel = stream.tokenSymbol ?? 'TOKEN';
+    const rows = streams.flatMap((stream) => {
       const status = !stream.isActive
         ? 'Ended'
         : stream.isPaused
@@ -120,24 +290,43 @@ const Dashboard = () => {
       const startIso = stream.startTime > 0n
         ? new Date(Number(stream.startTime) * 1000).toISOString()
         : '';
-      const claimable = stream.streamableAmount
-        ? formatTokenAmount(stream.streamableAmount, decimals)
-        : '0';
 
-      const values = [
-        stream.id.toString(),
-        stream.sender,
-        stream.recipient,
-        `${stream.token} (${tokenLabel})`,
-        formatTokenAmount(stream.totalAmount, decimals),
-        formatTokenAmount(stream.claimedAmount, decimals),
-        claimable,
-        startIso,
-        stream.duration.toString(),
-        status,
-      ];
+      if (stream.tokens.length === 0) {
+        const fallbackRow = [
+          stream.id.toString(),
+          stream.sender,
+          stream.recipient,
+          '—',
+          '—',
+          '0',
+          '0',
+          '0',
+          startIso,
+          stream.duration.toString(),
+          status,
+        ];
+        return [fallbackRow.map((value) => escapeCsv(value)).join(',')];
+      }
 
-      return values.map(value => escapeCsv(value)).join(',');
+      return stream.tokens.map((token) => {
+        const decimals = token.tokenDecimals ?? 18;
+        const symbol = token.tokenSymbol ?? `${token.token.slice(0, 6)}...${token.token.slice(-4)}`;
+        const values = [
+          stream.id.toString(),
+          stream.sender,
+          stream.recipient,
+          token.token,
+          symbol,
+          formatTokenAmount(token.totalAmount, decimals),
+          formatTokenAmount(token.claimedAmount, decimals),
+          formatTokenAmount(token.claimableAmount, decimals),
+          startIso,
+          stream.duration.toString(),
+          status,
+        ];
+
+        return values.map((value) => escapeCsv(value)).join(',');
+      });
     });
 
     const csvContent = [header.join(','), ...rows].join('\n');
@@ -288,11 +477,12 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground">Total Streamed</p>
                   <motion.p
                     key={totalStreamed}
-                    initial={{ scale: 1.2, color: 'hsl(171, 100%, 45%)' }}
-                    animate={{ scale: 1, color: 'hsl(210, 40%, 98%)' }}
+                    initial={{ scale: 1.05, opacity: 0.8 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
                     className="text-2xl font-bold font-mono"
                   >
-                    {totalStreamed.toFixed(4)}
+                    {totalStreamed}
                   </motion.p>
                 </div>
               </div>
@@ -303,13 +493,22 @@ const Dashboard = () => {
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <History className="h-6 w-6 text-primary" />
                 </div>
-                <div>
+                <div className="flex-1 space-y-2">
                   <p className="text-sm text-muted-foreground">Vault Managed</p>
-                  <p className="text-2xl font-bold font-mono">
-                    {totalManaged ? formatTokenAmount(totalManaged, streams[0]?.tokenDecimals ?? 18) : '0.0000'}
-                  </p>
-                  {strategyInfo?.[2] && (
-                    <p className="text-xs text-muted-foreground">Strategy earning yield</p>
+                  {STREAM_VAULT_ADDRESS === ZERO_ADDRESS ? (
+                    <p className="text-xs text-muted-foreground">
+                      Configure `VITE_STREAM_VAULT_ADDRESS` to view managed balances.
+                    </p>
+                  ) : vaultSummaries.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No tracked token balances yet.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {vaultSummaries.map((entry) => (
+                        <p key={entry.address} className="font-mono text-sm">
+                          {formatTokenAmount(entry.totalManaged, entry.decimals)} {entry.symbol}
+                        </p>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

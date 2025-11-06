@@ -4,6 +4,7 @@ import { PushAPI } from '@pushprotocol/restapi';
 import { NotifyClient } from '@walletconnect/notify-client';
 import { formatTokenAmount } from '@/lib/hooks';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
+import type { Stream } from '@/lib/contract';
 import {
   NotificationContext,
   type NotificationContextValue,
@@ -19,6 +20,26 @@ const WC_NOTIFY_SECRET = import.meta.env.VITE_WALLETCONNECT_NOTIFY_SECRET as str
 
 const chainPrefix = `eip155:${TARGET_CHAIN_ID}`;
 const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://streampay.example';
+
+const shortAddress = (address: `0x${string}`) => `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+const formatTokenBreakdown = (
+  tokens: Stream['tokens'],
+  selector: (allocation: Stream['tokens'][number]) => bigint,
+) => {
+  if (tokens.length === 0) {
+    return '0 tokens';
+  }
+
+  return tokens
+    .map((allocation) => {
+      const amount = selector(allocation);
+      const decimals = allocation.tokenDecimals ?? 18;
+      const symbol = allocation.tokenSymbol ?? `${allocation.token.slice(0, 6)}...${allocation.token.slice(-4)}`;
+      return `${formatTokenAmount(amount, decimals)} ${symbol}`;
+    })
+    .join(' + ');
+};
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const pushSignerRef = useRef<Wallet | null>(null);
@@ -131,24 +152,27 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const notifyStreamEvent = useCallback(
     async ({ type, stream, actor, recipients, count }: StreamEventPayload) => {
       const targetRecipients = recipients ?? [stream.recipient];
-      const formattedAmount = formatTokenAmount(stream.totalAmount, stream.tokenDecimals);
-      const tokenLabel = stream.tokenSymbol ?? 'tokens';
 
       let title = 'StreamPay Update';
       let body = '';
 
       switch (type) {
-        case 'create':
+        case 'create': {
+          const breakdown = formatTokenBreakdown(stream.tokens, (token) => token.totalAmount);
           title = 'New payment stream created';
-          body = `You are receiving ${formattedAmount} ${tokenLabel} over ${Number(stream.duration)} seconds from ${stream.sender.slice(0, 6)}...${stream.sender.slice(-4)}.`;
+          body = `You are receiving ${breakdown} over ${Number(stream.duration)} seconds from ${shortAddress(stream.sender)}. Your NFT receipt can now be transferred if needed.`;
           break;
-        case 'batch-create':
+        }
+        case 'batch-create': {
+          const breakdown = formatTokenBreakdown(stream.tokens, (token) => token.totalAmount);
+          const streamCount = count ?? recipients?.length ?? 1;
           title = 'New payroll streams created';
-          body = `${count ?? recipients?.length ?? 1} streams started on ${TARGET_CHAIN_NAME}.`;
+          body = `${streamCount} NFT-backed streams started on ${TARGET_CHAIN_NAME}. First stream includes ${breakdown}.`;
           break;
+        }
         case 'pause':
           title = 'Stream paused';
-          body = `Stream #${stream.id} has been paused by ${actor?.slice(0, 6)}...${actor?.slice(-4)}.`;
+          body = `Stream #${stream.id} has been paused by ${shortAddress(actor ?? stream.sender)}.`;
           break;
         case 'resume':
           title = 'Stream resumed';
@@ -156,12 +180,14 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           break;
         case 'cancel':
           title = 'Stream cancelled';
-          body = `Stream #${stream.id} was cancelled. Remaining funds are available to withdraw.`;
+          body = `Stream #${stream.id} was cancelled. Remaining funds stay in the vault until claimed.`;
           break;
-        case 'claim':
-          title = 'Stream claimed';
-          body = `${actor?.slice(0, 6)}...${actor?.slice(-4)} claimed from stream #${stream.id}.`;
+        case 'claim': {
+          const breakdown = formatTokenBreakdown(stream.tokens, (token) => token.claimableAmount);
+          title = 'Stream claim processed';
+          body = `${shortAddress(actor ?? stream.recipient)} claimed from stream #${stream.id}. Breakdown: ${breakdown}. Remember you can batch claim multiple NFT receipts.`;
           break;
+        }
       }
 
       await sendNotification(title, body, targetRecipients);
@@ -172,30 +198,34 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const processReminderSnapshot = useCallback(
     async (streams: Stream[]) => {
       for (const stream of streams) {
-        if (!stream.isActive || stream.isPaused) {
-          reminderCacheRef.current.delete(stream.id.toString());
-          continue;
-        }
+        for (const token of stream.tokens) {
+          const cacheKey = `${stream.id.toString()}-${token.token.toLowerCase()}`;
 
-        const claimable = stream.streamableAmount ?? 0n;
-        if (claimable === 0n) {
-          reminderCacheRef.current.delete(stream.id.toString());
-          continue;
-        }
+          if (!stream.isActive || stream.isPaused) {
+            reminderCacheRef.current.delete(cacheKey);
+            continue;
+          }
 
-        const threshold = stream.totalAmount / 20n; // notify every 5%
-        const minimum = threshold > 0n ? threshold : 1n;
-        const lastNotified = reminderCacheRef.current.get(stream.id.toString()) ?? 0n;
+          const claimable = token.claimableAmount;
+          if (claimable === 0n) {
+            reminderCacheRef.current.delete(cacheKey);
+            continue;
+          }
 
-        if (claimable >= minimum && claimable - lastNotified >= minimum) {
-          const formatted = formatTokenAmount(claimable, stream.tokenDecimals);
-          const tokenLabel = stream.tokenSymbol ?? 'tokens';
-          await sendNotification(
-            'Funds ready to claim',
-            `You can claim ${formatted} ${tokenLabel} from stream #${stream.id}.`,
-            [stream.recipient],
-          );
-          reminderCacheRef.current.set(stream.id.toString(), claimable);
+          const threshold = token.totalAmount / 20n; // notify every 5%
+          const minimum = threshold > 0n ? threshold : 1n;
+          const lastNotified = reminderCacheRef.current.get(cacheKey) ?? 0n;
+
+          if (claimable >= minimum && claimable - lastNotified >= minimum) {
+            const symbol = token.tokenSymbol ?? `${token.token.slice(0, 6)}...${token.token.slice(-4)}`;
+            const formatted = formatTokenAmount(claimable, token.tokenDecimals);
+            await sendNotification(
+              'Funds ready to claim',
+              `You can claim ${formatted} ${symbol} from stream #${stream.id}.`,
+              [stream.recipient],
+            );
+            reminderCacheRef.current.set(cacheKey, claimable);
+          }
         }
       }
     },

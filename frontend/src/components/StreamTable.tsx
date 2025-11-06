@@ -1,6 +1,13 @@
-import { useState } from 'react';
-import { Stream } from '@/lib/contract';
-import { useClaimStream, useCancelStream, usePauseStream, useResumeStream, formatTokenAmount } from '@/lib/hooks';
+import { useMemo, useState } from 'react';
+import { Stream, type StreamTokenAllocation } from '@/lib/contract';
+import {
+  useClaimStream,
+  useClaimStreamsBatch,
+  useCancelStream,
+  usePauseStream,
+  useResumeStream,
+  formatTokenAmount,
+} from '@/lib/hooks';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -30,12 +37,15 @@ const StreamTable = ({
   isNetworkReady = true,
 }: StreamTableProps) => {
   const { claimStream, isPending: isClaiming } = useClaimStream();
+  const { claimStreamsBatch, isPending: isBatchClaiming } = useClaimStreamsBatch();
   const { cancelStream, isPending: isCancelling } = useCancelStream();
   const { pauseStream, isPending: isPausing } = usePauseStream();
   const { resumeStream, isPending: isResuming } = useResumeStream();
   const [selectedStreamId, setSelectedStreamId] = useState<bigint | null>(null);
   const [selectedStreams, setSelectedStreams] = useState<Set<bigint>>(new Set());
   const { notifyStreamEvent } = useNotifications();
+
+  const userAddressLower = useMemo(() => userAddress.toLowerCase(), [userAddress]);
 
   const displayStreams = showHistory ? streams.filter(s => !s.isActive) : streams.filter(s => s.isActive);
 
@@ -121,8 +131,9 @@ const StreamTable = ({
     if (!guardNetwork()) {
       return;
     }
-    const claimableStreams = Array.from(selectedStreams).filter(id => {
-      const stream = streams.find(s => s.id === id);
+
+    const claimableStreams = Array.from(selectedStreams).filter((id) => {
+      const stream = streams.find((s) => s.id === id);
       return (
         stream &&
         stream.recipient.toLowerCase() === userAddress.toLowerCase() &&
@@ -131,10 +142,38 @@ const StreamTable = ({
       );
     });
 
-    for (const streamId of claimableStreams) {
-      await handleClaim(streamId);
+    if (claimableStreams.length === 0) {
+      toast.info('Select at least one active stream you can claim.');
+      return;
     }
-    setSelectedStreams(new Set());
+
+    try {
+      const hash = await claimStreamsBatch(claimableStreams);
+      if (hash && onTransactionSubmit) {
+        onTransactionSubmit(hash, `Claim ${claimableStreams.length} Streams`);
+      }
+
+      toast.success(`Batch claim submitted for ${claimableStreams.length} stream${claimableStreams.length > 1 ? 's' : ''}`);
+      setTimeout(() => onRefetch(), 2000);
+
+      for (const streamId of claimableStreams) {
+        const stream = streams.find((item) => item.id === streamId);
+        if (!stream) {
+          continue;
+        }
+        await notifyStreamEvent({
+          type: 'claim',
+          stream,
+          actor: userAddress,
+          recipients: [stream.sender],
+        });
+      }
+    } catch (error) {
+      console.error('Batch claim failed', error);
+      toast.error('Failed to submit batch claim');
+    } finally {
+      setSelectedStreams(new Set());
+    }
   };
 
   const handleBatchCancel = async () => {
@@ -249,7 +288,7 @@ const StreamTable = ({
                 onClick={handleBatchClaim}
                 size="sm"
                 className="animated-gradient"
-                disabled={!isNetworkReady || isClaiming}
+                disabled={!isNetworkReady || isBatchClaiming}
               >
                 <DollarSign className="mr-2 h-4 w-4" />
                 Claim All
@@ -270,19 +309,37 @@ const StreamTable = ({
 
       <AnimatePresence>
         {displayStreams.map((stream, index) => {
-          const isReceiver = stream.recipient.toLowerCase() === userAddress.toLowerCase();
-          const isSender = stream.sender.toLowerCase() === userAddress.toLowerCase();
-          const remaining = stream.totalAmount - stream.claimedAmount;
+          const isReceiver = stream.recipient.toLowerCase() === userAddressLower;
+          const isSender = stream.sender.toLowerCase() === userAddressLower;
           const progress = calculateProgress(stream);
           const isSelected = selectedStreams.has(stream.id);
-          const tokenDecimals = stream.tokenDecimals ?? 18;
-          const tokenSymbol = stream.tokenSymbol ?? '';
           const statusLabel = stream.isActive ? (stream.isPaused ? 'Paused' : 'Active') : 'Ended';
           const statusIndicator = !stream.isActive
             ? 'bg-muted'
             : stream.isPaused
               ? 'bg-yellow-400'
               : 'bg-primary animate-pulse';
+
+          const tokenBreakdown = stream.tokens.map((tokenAllocation) => {
+            const remainingAmount = tokenAllocation.totalAmount > tokenAllocation.claimedAmount
+              ? tokenAllocation.totalAmount - tokenAllocation.claimedAmount
+              : 0n;
+            const decimals = tokenAllocation.tokenDecimals ?? 18;
+            const symbol = tokenAllocation.tokenSymbol ?? `${tokenAllocation.token.slice(0, 6)}...${tokenAllocation.token.slice(-4)}`;
+            const ratePerSecond = stream.duration > 0n
+              ? tokenAllocation.totalAmount / stream.duration
+              : 0n;
+
+            return {
+              key: tokenAllocation.token,
+              symbol,
+              decimals,
+              ratePerSecond,
+              claimed: tokenAllocation.claimedAmount,
+              remaining: remainingAmount,
+              claimable: tokenAllocation.claimableAmount,
+            };
+          });
 
           return (
             <motion.div
@@ -322,33 +379,59 @@ const StreamTable = ({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                         <div>
-                          <p className="text-muted-foreground">Rate/sec</p>
-                          <p className="font-semibold">
-                            {formatTokenAmount(stream.totalAmount / stream.duration, tokenDecimals)}
-                            {tokenSymbol ? ` ${tokenSymbol}` : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Claimed</p>
-                          <p className="font-semibold text-primary">
-                            {formatTokenAmount(stream.claimedAmount, tokenDecimals)}
-                            {tokenSymbol ? ` ${tokenSymbol}` : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Remaining</p>
-                          <p className="font-semibold">
-                            {formatTokenAmount(remaining, tokenDecimals)}
-                            {tokenSymbol ? ` ${tokenSymbol}` : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Status</p>
-                          <div className="flex items-center gap-2">
+                          <p className="text-muted-foreground uppercase text-xs tracking-wide">Status</p>
+                          <div className="mt-2 flex items-center gap-2">
                             <div className={`h-2 w-2 rounded-full ${statusIndicator}`} />
                             <p className="font-semibold">{statusLabel}</p>
+                          </div>
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            Stream duration: {Number(stream.duration)}s · Tokens: {tokenBreakdown.length}
+                          </p>
+                        </div>
+                        <div className="md:col-span-2 space-y-2">
+                          <p className="text-muted-foreground uppercase text-xs tracking-wide">Token breakdown</p>
+                          <div className="space-y-2">
+                            {tokenBreakdown.map((token) => (
+                              <div
+                                key={token.key}
+                                className="rounded-md border border-primary/10 bg-primary/5 px-4 py-3 backdrop-blur"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <p className="font-semibold text-foreground">{token.symbol}</p>
+                                  <p className="font-mono text-[11px] text-muted-foreground">
+                                    {token.key.slice(0, 6)}...{token.key.slice(-4)}
+                                  </p>
+                                </div>
+                                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                  <div>
+                                    <p className="text-muted-foreground">Rate/sec</p>
+                                    <p className="font-semibold">
+                                      {formatTokenAmount(token.ratePerSecond, token.decimals)}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Claimed</p>
+                                    <p className="font-semibold text-primary">
+                                      {formatTokenAmount(token.claimed, token.decimals)}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Remaining</p>
+                                    <p className="font-semibold">
+                                      {formatTokenAmount(token.remaining, token.decimals)}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Claimable now</p>
+                                    <p className="font-semibold">
+                                      {formatTokenAmount(token.claimable, token.decimals)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>

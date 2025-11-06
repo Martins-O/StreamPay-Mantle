@@ -2,7 +2,7 @@
 
 **Real-time payment streaming protocol on Mantle L2 testnet**
 
-StreamPay allows users to continuously stream ERC-20 tokens to recipients over time. The amount accumulates block-by-block, and recipients can claim at any time. Senders can cancel or pause streams.
+StreamPay allows users to continuously stream one or many ERC-20 tokens to recipients over time. Each stream mints a transferable NFT receipt, enabling recipients to batch claim across payrolls or hand off ownership instantly. Senders can top up, extend, pause, or cancel streams at will.
 
 ![StreamPay Demo](https://via.placeholder.com/800x400/1e40af/ffffff?text=StreamPay+Mantle+Demo)
 
@@ -10,8 +10,9 @@ StreamPay allows users to continuously stream ERC-20 tokens to recipients over t
 
 StreamPay Mantle enables:
 - **Real-time token streaming** with second-by-second precision
-- **Flexible claiming** - recipients can claim accrued amounts anytime
-- **Sender control** - cancel streams and reclaim remaining tokens
+- **Transferable NFT receipts** - each stream issues an ERC-721 proving the right to future funds
+- **Flexible claiming** - recipients batch claim accrued amounts across many streams
+- **Sender control** - top up, extend, or cancel and reclaim remaining tokens
 - **Low-cost operations** on Mantle L2 for minimal gas fees
 - **Live visualization** with animated flow counters
 
@@ -121,6 +122,12 @@ Open [http://localhost:3000](http://localhost:3000) and:
   - Stream visualization charts
   - Responsive design with Tailwind CSS
 
+- [x] **Advanced Streaming Controls**
+  - Transferable ERC-721 receipts per stream
+  - Multi-token allocations within a single stream
+  - Batch claim function for payroll-style withdrawals
+  - Sender-driven top-ups and duration extensions
+
 - [x] **Developer Experience**
   - Automated deployment scripts
   - Contract verification on Mantlescan
@@ -129,12 +136,10 @@ Open [http://localhost:3000](http://localhost:3000) and:
 
 ### 🔮 Future Improvements
 
-- [ ] **Pause/Resume Streams** - Temporarily halt streaming
-- [ ] **Batch Payroll** - Create multiple streams in one transaction
-- [ ] **NFT Stream Receipts** - Mint NFTs representing streams
-- [ ] **Multi-token Support** - Stream different ERC-20 tokens
-- [ ] **Stream Templates** - Save and reuse common configurations
-- [ ] **Notification System** - Alerts for claims and cancellations
+- [ ] **Stream Templates** - Save and reuse multi-recipient configurations
+- [ ] **Advanced Analytics** - Token-by-token forecast charts and yield breakdowns
+- [ ] **Notification Enhancements** - SMS/email bridges in addition to on-chain alerts
+- [ ] **Role-Based Access** - Delegate stream management to trusted operators
 
 ## 🔧 Technical Details
 
@@ -162,35 +167,37 @@ Open [http://localhost:3000](http://localhost:3000) and:
 ### Core Functions
 
 #### `createStream(recipient, token, totalAmount, duration)`
-Creates a new payment stream.
+Creates a single-token payment stream and mints an NFT receipt.
 
-**Parameters:**
-- `recipient` (address): Receiver of the stream
-- `token` (address): ERC-20 token contract address
-- `totalAmount` (uint256): Total tokens to stream
-- `duration` (uint256): Stream duration in seconds
-
-**Returns:** Stream ID (uint256)
+#### `createStreamsBatch(params[])`
+Creates many streams in one transaction. Each `params[i]` includes:
+- `recipient` (address)
+- `tokens` (address[]): array of ERC-20 addresses
+- `totalAmounts` (uint256[]): matching array of totals per token
+- `duration` (uint256): seconds of streaming
 
 #### `claim(streamId)`
-Claims accumulated tokens from a stream.
+Claims accumulated tokens from a stream. Callable by the NFT holder.
 
-**Parameters:**
-- `streamId` (uint256): ID of the stream to claim from
+#### `claimStreamsBatch(streamIds[])`
+Aggregates multiple stream claims into a single transaction.
 
 #### `cancelStream(streamId)`
-Cancels a stream and refunds remaining tokens.
+Cancels a stream and refunds remaining allocations to the sender.
 
-**Parameters:**
-- `streamId` (uint256): ID of the stream to cancel
+#### `topUpStream(streamId, token, amount)`
+Adds more liquidity (or a new token) to an active stream.
+
+#### `extendStreamDuration(streamId, additionalDuration)`
+Extends the accrual window without redeploying the stream.
 
 ### View Functions
 
-#### `getStreamableAmount(streamId)`
-Returns currently claimable amount for a stream.
-
 #### `getStream(streamId)`
-Returns complete stream information.
+Returns the stream metadata plus the list of token allocations.
+
+#### `getStreamableAmounts(streamId)`
+Returns two arrays: token addresses and the currently claimable amount for each.
 
 ## 🧪 Testing
 

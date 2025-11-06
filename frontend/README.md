@@ -52,6 +52,16 @@ The interface needs deployed contract addresses to read/write data. After runnin
 
 If no addresses are configured the dashboard will stay in read-only mode and prompt you to supply the required env variables.
 
+## NFT Receipts & Batch Claiming
+
+Every stream minted through the UI now issues an ERC-721 receipt to the recipient. The dashboard shows per-token breakdowns for each NFT and exposes:
+
+- **Multi-token streams** – add more than one ERC-20 allocation to a single stream
+- **Batch claiming** – select multiple NFT receipts and withdraw them in one transaction
+- **Transfer awareness** – as soon as an NFT moves to a new wallet, the UI updates the owner’s stream list automatically
+
+Educate stream recipients to keep their NFT safe (or transfer it intentionally) because it is the credential required to continue claiming.
+
 ## Building for Production
 ```bash
 npm run build

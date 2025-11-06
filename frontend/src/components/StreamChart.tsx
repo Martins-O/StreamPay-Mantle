@@ -20,10 +20,24 @@ const UPDATE_INTERVAL_MS = 4_000;
 
 const StreamChart = ({ stream }: StreamChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('hourly');
-  const decimals = stream.tokenDecimals ?? 18;
+  const primaryToken = stream.tokens[0];
+
+  if (!primaryToken) {
+    return (
+      <Card className="glass-card p-6">
+        <h3 className="text-lg font-semibold mb-2">Stream Analytics</h3>
+        <p className="text-sm text-muted-foreground">
+          This stream does not have any token allocations yet. Once tokens are deposited, analytics will appear here.
+        </p>
+      </Card>
+    );
+  }
+
+  const decimals = primaryToken.tokenDecimals ?? 18;
+  const tokenSymbol = primaryToken.tokenSymbol ?? `${primaryToken.token.slice(0, 6)}...${primaryToken.token.slice(-4)}`;
   const totalAmount = useMemo(
-    () => parseFloat(formatTokenAmount(stream.totalAmount, decimals)),
-    [stream.totalAmount, decimals],
+    () => parseFloat(formatTokenAmount(primaryToken.totalAmount, decimals)),
+    [primaryToken.totalAmount, decimals],
   );
   const totalDurationSeconds = useMemo(
     () => Math.max(Number(stream.duration), 1),
@@ -56,19 +70,19 @@ const StreamChart = ({ stream }: StreamChartProps) => {
     const fraction = totalDurationSeconds > 0 ? Math.min(Math.max(Number(elapsed) / totalDurationSeconds, 0), 1) : 0;
 
     const streamedAmount = stream.duration > 0n
-      ? (stream.totalAmount * elapsed) / stream.duration
-      : stream.totalAmount;
-    const claimableAmount = streamedAmount > stream.claimedAmount
-      ? streamedAmount - stream.claimedAmount
+      ? (primaryToken.totalAmount * elapsed) / stream.duration
+      : primaryToken.totalAmount;
+    const claimableAmount = streamedAmount > primaryToken.claimedAmount
+      ? streamedAmount - primaryToken.claimedAmount
       : 0n;
-    const remainingToStream = stream.totalAmount > streamedAmount
-      ? stream.totalAmount - streamedAmount
+    const remainingToStream = primaryToken.totalAmount > streamedAmount
+      ? primaryToken.totalAmount - streamedAmount
       : 0n;
-    const remainingToClaim = stream.totalAmount > stream.claimedAmount
-      ? stream.totalAmount - stream.claimedAmount
+    const remainingToClaim = primaryToken.totalAmount > primaryToken.claimedAmount
+      ? primaryToken.totalAmount - primaryToken.claimedAmount
       : 0n;
-    const totalProgress = stream.totalAmount > 0n
-      ? Number((streamedAmount * 10000n) / stream.totalAmount) / 100
+    const totalProgress = primaryToken.totalAmount > 0n
+      ? Number((streamedAmount * 10000n) / primaryToken.totalAmount) / 100
       : 0;
 
     return {
@@ -100,8 +114,8 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   }, [computeProgress]);
 
   const totalFormatted = useMemo(
-    () => formatTokenAmount(stream.totalAmount, decimals),
-    [stream.totalAmount, decimals],
+    () => formatTokenAmount(primaryToken.totalAmount, decimals),
+    [primaryToken.totalAmount, decimals],
   );
   const streamedFormatted = useMemo(
     () => formatTokenAmount(snapshot.streamedAmount, decimals),
@@ -112,8 +126,8 @@ const StreamChart = ({ stream }: StreamChartProps) => {
     [snapshot.claimableAmount, decimals],
   );
   const claimedFormatted = useMemo(
-    () => formatTokenAmount(stream.claimedAmount, decimals),
-    [stream.claimedAmount, decimals],
+    () => formatTokenAmount(primaryToken.claimedAmount, decimals),
+    [primaryToken.claimedAmount, decimals],
   );
   const remainingFormatted = useMemo(
     () => formatTokenAmount(snapshot.remainingToStream, decimals),
@@ -175,8 +189,8 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   })();
 
   const rateLabel = viewMode === 'hourly'
-    ? `${ratePerHour.toFixed(4)} per hour`
-    : `${ratePerDay.toFixed(4)} per day`;
+    ? `${ratePerHour.toFixed(4)} ${tokenSymbol} per hour`
+    : `${ratePerDay.toFixed(4)} ${tokenSymbol} per day`;
 
   const progressPercentRounded = Math.min(Math.max(Number(snapshot.progressPercent.toFixed(1)), 0), 100);
 
@@ -185,7 +199,9 @@ const StreamChart = ({ stream }: StreamChartProps) => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold">Stream Analytics</h3>
-          <p className="text-sm text-muted-foreground">Live snapshot of the highlighted stream</p>
+          <p className="text-sm text-muted-foreground">
+            Tracking the primary token ({tokenSymbol}) for this NFT-backed stream
+          </p>
         </div>
         <div className="flex gap-2">
           {VIEW_OPTIONS.map(option => (
