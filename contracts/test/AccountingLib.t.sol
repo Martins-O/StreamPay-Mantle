@@ -47,16 +47,7 @@ contract AccountingLibTest is Test {
         uint256 timestamp = startTime + 10;
 
         AccountingLib.AccrualResult memory result = harness.calculateAccrual(
-            totalAmount,
-            claimedAmount,
-            startTime,
-            duration,
-            startTime,
-            0,
-            timestamp,
-            false,
-            0,
-            0
+            totalAmount, claimedAmount, startTime, duration, startTime, 0, timestamp, false, 0, 0
         );
 
         uint256 expectedClaimable = (totalAmount * 10) / duration;
@@ -72,16 +63,7 @@ contract AccountingLibTest is Test {
         uint256 timestamp = startTime + 50;
 
         AccountingLib.AccrualResult memory result = harness.calculateAccrual(
-            totalAmount,
-            claimedAmount,
-            startTime,
-            duration,
-            startTime + 30,
-            0,
-            timestamp,
-            false,
-            0,
-            0
+            totalAmount, claimedAmount, startTime, duration, startTime + 30, 0, timestamp, false, 0, 0
         );
 
         uint256 totalStreamed = (totalAmount * 50) / duration;
@@ -98,16 +80,7 @@ contract AccountingLibTest is Test {
         uint256 timestamp = startTime + 50;
 
         AccountingLib.AccrualResult memory result = harness.calculateAccrual(
-            totalAmount,
-            claimedAmount,
-            startTime,
-            duration,
-            startTime,
-            stopTime,
-            timestamp,
-            false,
-            0,
-            0
+            totalAmount, claimedAmount, startTime, duration, startTime, stopTime, timestamp, false, 0, 0
         );
 
         uint256 expectedStreamed = (totalAmount * 25) / duration;
@@ -123,16 +96,7 @@ contract AccountingLibTest is Test {
         uint256 timestamp = startTime + 1_000;
 
         AccountingLib.AccrualResult memory result = harness.calculateAccrual(
-            totalAmount,
-            claimedAmount,
-            startTime,
-            duration,
-            startTime,
-            0,
-            timestamp,
-            false,
-            0,
-            0
+            totalAmount, claimedAmount, startTime, duration, startTime, 0, timestamp, false, 0, 0
         );
 
         assertEq(result.claimable, totalAmount);
@@ -148,16 +112,7 @@ contract AccountingLibTest is Test {
         uint256 timestamp = startTime + 50;
 
         AccountingLib.AccrualResult memory result = harness.calculateAccrual(
-            totalAmount,
-            claimedAmount,
-            startTime,
-            duration,
-            lastClaimed,
-            0,
-            timestamp,
-            false,
-            0,
-            0
+            totalAmount, claimedAmount, startTime, duration, lastClaimed, 0, timestamp, false, 0, 0
         );
 
         assertEq(result.claimable, 0);
@@ -165,19 +120,9 @@ contract AccountingLibTest is Test {
     }
 
     function testAccrualHandlesZeroDuration() public view {
-        AccountingLib.AccrualResult memory result = harness.calculateAccrual(
-            1_000 ether,
-            0,
-            1_000,
-            0,
-            1_000,
-            0,
-            2_000,
-            false,
-            0,
-            0
-        );
-    
+        AccountingLib.AccrualResult memory result =
+            harness.calculateAccrual(1_000 ether, 0, 1_000, 0, 1_000, 0, 2_000, false, 0, 0);
+
         assertEq(result.claimable, 0);
         assertEq(result.accrualPoint, 1_000);
     }
@@ -188,16 +133,7 @@ contract AccountingLibTest is Test {
         uint256 duration = 100;
 
         AccountingLib.AccrualResult memory resultWhilePaused = harness.calculateAccrual(
-            totalAmount,
-            0,
-            startTime,
-            duration,
-            startTime + 40,
-            0,
-            startTime + 80,
-            true,
-            startTime + 40,
-            0
+            totalAmount, 0, startTime, duration, startTime + 40, 0, startTime + 80, true, startTime + 40, 0
         );
 
         assertEq(resultWhilePaused.claimable, 0);
