@@ -204,6 +204,28 @@ contract StreamManagerTest is Test {
         assertGt(tokenA.balanceOf(recipient), 0);
     }
 
+    function testResumeAfterPauseLongerThanDuration() public {
+        uint256 totalAmount = 1_000 * 1e6;
+        uint256 duration = 100;
+
+        vm.prank(sender);
+        uint256 streamId = streamManager.createStream(recipient, address(tokenA), totalAmount, duration);
+
+        vm.warp(block.timestamp + 20);
+        vm.prank(sender);
+        streamManager.pauseStream(streamId);
+
+        vm.warp(block.timestamp + 500);
+        vm.prank(sender);
+        streamManager.resumeStream(streamId);
+
+        vm.warp(block.timestamp + 10);
+        vm.prank(recipient);
+        streamManager.claim(streamId);
+
+        assertGt(tokenA.balanceOf(recipient), 0);
+    }
+
     function testTopUpStream() public {
         uint256 totalAmount = 1_000 * 1e6;
         uint256 topUpAmount = 500 * 1e6;
@@ -218,6 +240,38 @@ contract StreamManagerTest is Test {
 
         (, StreamManager.StreamToken[] memory assets) = streamManager.getStream(streamId);
         assertEq(assets[0].totalAmount, totalAmount + topUpAmount);
+    }
+
+    function testTopUpDoesNotRetroactivelyStream() public {
+        uint256 totalAmount = 1_000 * 1e6;
+        uint256 topUpAmount = 500 * 1e6;
+        uint256 duration = 100;
+
+        vm.prank(sender);
+        uint256 streamId = streamManager.createStream(recipient, address(tokenA), totalAmount, duration);
+
+        vm.warp(block.timestamp + 60);
+
+        vm.prank(sender);
+        streamManager.topUpStream(streamId, address(tokenA), topUpAmount);
+
+        uint256 expectedInitial = (totalAmount * 60) / duration;
+
+        vm.prank(recipient);
+        streamManager.claim(streamId);
+        assertEq(tokenA.balanceOf(recipient), expectedInitial);
+
+        vm.warp(block.timestamp + 10);
+
+        vm.prank(recipient);
+        streamManager.claim(streamId);
+        uint256 totalClaimed = tokenA.balanceOf(recipient);
+        uint256 delta = totalClaimed - expectedInitial;
+
+        uint256 expectedOldPortion = ((totalAmount * 70) / duration) - expectedInitial;
+        uint256 expectedNewPortion = (topUpAmount * 10) / (duration - 60);
+
+        assertEq(delta, expectedOldPortion + expectedNewPortion);
     }
 
     function testExtendStreamDuration() public {

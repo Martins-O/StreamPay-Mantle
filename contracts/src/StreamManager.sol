@@ -19,6 +19,17 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         uint256 claimedAmount;
     }
 
+    struct TokenAllocation {
+        address token;
+        uint256 totalAmount;
+        uint256 claimedAmount;
+        uint256 startTime;
+        uint256 duration;
+        uint256 pauseAccumulated;
+        uint256 pauseCarry;
+        uint256 lastAccrued;
+    }
+
     struct Stream {
         address sender;
         address recipient;
@@ -43,7 +54,132 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
     uint256 public streamCounter;
 
     mapping(uint256 => Stream) public streams;
-    mapping(uint256 => StreamToken[]) private _streamTokens;
+    mapping(uint256 => TokenAllocation[]) private _tokenAllocations;
+
+    function _currentPauseCarry(Stream storage stream) internal view returns (uint256) {
+        if (stream.isPaused && stream.pauseStart != 0 && block.timestamp > stream.pauseStart) {
+            return block.timestamp - stream.pauseStart;
+        }
+        return 0;
+    }
+
+    function _remainingActiveDuration(Stream storage stream) internal view returns (uint256) {
+        if (!stream.isActive) {
+            return 0;
+        }
+
+        uint256 elapsed = block.timestamp - stream.startTime;
+        uint256 paused = stream.pausedDuration;
+        if (stream.isPaused && stream.pauseStart != 0 && block.timestamp > stream.pauseStart) {
+            paused += block.timestamp - stream.pauseStart;
+        }
+
+        if (elapsed <= paused) {
+            return stream.duration;
+        }
+
+        uint256 activeElapsed = elapsed - paused;
+        if (stream.duration <= activeElapsed) {
+            return 0;
+        }
+
+        return stream.duration - activeElapsed;
+    }
+
+    function _pausedDurationForAllocation(TokenAllocation storage allocation, Stream storage stream)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 paused = stream.pausedDuration;
+        if (paused <= allocation.pauseAccumulated) {
+            paused = 0;
+        } else {
+            paused -= allocation.pauseAccumulated;
+        }
+
+        if (allocation.pauseCarry > 0) {
+            if (paused <= allocation.pauseCarry) {
+                paused = 0;
+            } else {
+                paused -= allocation.pauseCarry;
+            }
+        }
+
+        return paused;
+    }
+
+    function _findTokenIndex(address[] memory tokens, address token) internal pure returns (uint256) {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (tokens[i] == token) {
+                return i;
+            }
+        }
+        revert("TOKEN_NOT_FOUND");
+    }
+
+    function _uniqueTokenAddresses(TokenAllocation[] storage allocations) internal view returns (address[] memory) {
+        uint256 length = allocations.length;
+        if (length == 0) {
+            return new address[](0);
+        }
+
+        address[] memory temp = new address[](length);
+        uint256 unique;
+
+        for (uint256 i = 0; i < length; i++) {
+            address token = allocations[i].token;
+            bool exists;
+            for (uint256 j = 0; j < unique; j++) {
+                if (temp[j] == token) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                temp[unique++] = token;
+            }
+        }
+
+        address[] memory tokens = new address[](unique);
+        for (uint256 i = 0; i < unique; i++) {
+            tokens[i] = temp[i];
+        }
+        return tokens;
+    }
+
+    function _aggregateTokens(TokenAllocation[] storage allocations) internal view returns (StreamToken[] memory tokens) {
+        address[] memory unique = _uniqueTokenAddresses(allocations);
+        uint256 count = unique.length;
+        tokens = new StreamToken[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            tokens[i].token = unique[i];
+        }
+
+        for (uint256 i = 0; i < allocations.length; i++) {
+            address tokenAddr = allocations[i].token;
+            for (uint256 j = 0; j < count; j++) {
+                if (tokens[j].token == tokenAddr) {
+                    tokens[j].totalAmount += allocations[i].totalAmount;
+                    tokens[j].claimedAmount += allocations[i].claimedAmount;
+                    break;
+                }
+            }
+        }
+    }
+
+    function _totalAllocatedForToken(TokenAllocation[] storage allocations, address token)
+        internal
+        view
+        returns (uint256 total)
+    {
+        for (uint256 i = 0; i < allocations.length; i++) {
+            if (allocations[i].token == token) {
+                total += allocations[i].totalAmount;
+            }
+        }
+    }
     mapping(address => uint256[]) public senderStreams;
     mapping(address => uint256[]) public recipientStreams;
     mapping(address => mapping(uint256 => uint256)) private _recipientStreamIndex;
@@ -165,59 +301,57 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         returns (address[] memory tokens, uint256[] memory amounts)
     {
         Stream storage stream = streams[streamId];
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
+        StreamToken[] memory aggregates = _aggregateTokens(allocations);
+        uint256 aggregateLength = aggregates.length;
+
         if (!stream.isActive || stream.isPaused) {
-            StreamToken[] storage allocations = _streamTokens[streamId];
-            uint256 len = allocations.length;
-            tokens = new address[](len);
-            amounts = new uint256[](len);
-            for (uint256 i = 0; i < len; i++) {
-                tokens[i] = allocations[i].token;
+            tokens = new address[](aggregateLength);
+            amounts = new uint256[](aggregateLength);
+            for (uint256 i = 0; i < aggregateLength; i++) {
+                tokens[i] = aggregates[i].token;
             }
             return (tokens, amounts);
         }
 
-        StreamToken[] storage assets = _streamTokens[streamId];
-        uint256 length = assets.length;
-        tokens = new address[](length);
-        amounts = new uint256[](length);
+        tokens = new address[](aggregateLength);
+        amounts = new uint256[](aggregateLength);
+        for (uint256 i = 0; i < aggregateLength; i++) {
+            tokens[i] = aggregates[i].token;
+        }
 
-        for (uint256 i = 0; i < length; i++) {
+        uint256 timestamp = block.timestamp;
+        for (uint256 i = 0; i < allocations.length; i++) {
+            TokenAllocation storage allocation = allocations[i];
+            uint256 pausedForToken = _pausedDurationForAllocation(allocation, stream);
             AccountingLib.AccrualResult memory accrual = AccountingLib.calculateAccrual(
-                assets[i].totalAmount,
-                assets[i].claimedAmount,
-                stream.startTime,
-                stream.duration,
-                stream.lastClaimed,
+                allocation.totalAmount,
+                allocation.claimedAmount,
+                allocation.startTime,
+                allocation.duration,
+                allocation.lastAccrued,
                 stream.stopTime,
-                block.timestamp,
+                timestamp,
                 stream.isPaused,
                 stream.pauseStart,
-                stream.pausedDuration
+                pausedForToken
             );
-            tokens[i] = assets[i].token;
-            amounts[i] = accrual.claimable;
+
+            uint256 index = _findTokenIndex(tokens, allocation.token);
+            amounts[index] += accrual.claimable;
         }
     }
 
     function getStream(uint256 streamId) external view returns (Stream memory data, StreamToken[] memory tokens) {
         Stream storage stream = streams[streamId];
         data = stream;
-        StreamToken[] storage assets = _streamTokens[streamId];
-        uint256 length = assets.length;
-        tokens = new StreamToken[](length);
-        for (uint256 i = 0; i < length; i++) {
-            tokens[i] = assets[i];
-        }
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
+        tokens = _aggregateTokens(allocations);
     }
 
     function getStreamTokens(uint256 streamId) external view returns (StreamToken[] memory) {
-        StreamToken[] storage allocations = _streamTokens[streamId];
-        uint256 length = allocations.length;
-        StreamToken[] memory tokens = new StreamToken[](length);
-        for (uint256 i = 0; i < length; i++) {
-            tokens[i] = allocations[i];
-        }
-        return tokens;
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
+        return _aggregateTokens(allocations);
     }
 
     function topUpStream(uint256 streamId, address token, uint256 amount) external nonReentrant whenNotPaused {
@@ -228,21 +362,24 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         require(stream.isActive, "Stream not active");
         require(stream.sender == msg.sender, "Only sender can top up");
 
-        StreamToken[] storage assets = _streamTokens[streamId];
-        bool found;
-        for (uint256 i = 0; i < assets.length; i++) {
-            if (assets[i].token == token) {
-                assets[i].totalAmount += amount;
-                found = true;
-                emit StreamToppedUp(streamId, msg.sender, token, amount, assets[i].totalAmount);
-                break;
-            }
-        }
+        uint256 remainingDuration = _remainingActiveDuration(stream);
+        require(remainingDuration > 0, "Stream completed");
 
-        if (!found) {
-            assets.push(StreamToken({token: token, totalAmount: amount, claimedAmount: 0}));
-            emit StreamToppedUp(streamId, msg.sender, token, amount, amount);
-        }
+        TokenAllocation memory allocation = TokenAllocation({
+            token: token,
+            totalAmount: amount,
+            claimedAmount: 0,
+            startTime: block.timestamp,
+            duration: remainingDuration,
+            pauseAccumulated: stream.pausedDuration,
+            pauseCarry: _currentPauseCarry(stream),
+            lastAccrued: block.timestamp
+        });
+
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
+        allocations.push(allocation);
+        uint256 newTotal = _totalAllocatedForToken(allocations, token);
+        emit StreamToppedUp(streamId, msg.sender, token, amount, newTotal);
 
         IERC20(token).safeTransferFrom(msg.sender, address(VAULT), amount);
         VAULT.pushToStrategy(token);
@@ -255,6 +392,10 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         require(stream.sender == msg.sender, "Only sender can extend");
 
         stream.duration += additionalDuration;
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
+        for (uint256 i = 0; i < allocations.length; i++) {
+            allocations[i].duration += additionalDuration;
+        }
         emit StreamDurationExtended(streamId, stream.duration);
     }
 
@@ -300,9 +441,6 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
 
         uint256 pausedFor = block.timestamp - stream.pauseStart;
         stream.pausedDuration += pausedFor;
-        if (stream.pausedDuration > stream.duration) {
-            stream.pausedDuration = stream.duration;
-        }
 
         stream.pauseStart = 0;
         stream.isPaused = false;
@@ -353,7 +491,7 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         stream.lastClaimed = block.timestamp;
         stream.isActive = true;
 
-        StreamToken[] storage assets = _streamTokens[streamId];
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
         address[] memory eventTokens = new address[](tokens.length);
         uint256[] memory eventTotals = new uint256[](tokens.length);
 
@@ -361,7 +499,18 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
             require(tokens[i] != address(0), "Invalid token");
             require(totalAmounts[i] > 0, "Amount must be greater than zero");
 
-            assets.push(StreamToken({token: tokens[i], totalAmount: totalAmounts[i], claimedAmount: 0}));
+            allocations.push(
+                TokenAllocation({
+                    token: tokens[i],
+                    totalAmount: totalAmounts[i],
+                    claimedAmount: 0,
+                    startTime: stream.startTime,
+                    duration: duration,
+                    pauseAccumulated: stream.pausedDuration,
+                    pauseCarry: 0,
+                    lastAccrued: stream.startTime
+                })
+            );
             eventTokens[i] = tokens[i];
             eventTotals[i] = totalAmounts[i];
 
@@ -393,40 +542,47 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
 
     function _distributeAccrued(uint256 streamId, address recipient) internal returns (bool fullyClaimed) {
         Stream storage stream = streams[streamId];
-        StreamToken[] storage assets = _streamTokens[streamId];
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
 
-        uint256 assetsLength = assets.length;
-        uint256 accruedPoint = stream.lastClaimed;
+        uint256 allocationsLength = allocations.length;
+        uint256 latestAccrualPoint = stream.lastClaimed;
         fullyClaimed = true;
+        uint256 timestamp = block.timestamp;
 
-        for (uint256 i = 0; i < assetsLength; i++) {
+        for (uint256 i = 0; i < allocationsLength; i++) {
+            TokenAllocation storage allocation = allocations[i];
+            uint256 pausedForToken = _pausedDurationForAllocation(allocation, stream);
             AccountingLib.AccrualResult memory accrual = AccountingLib.calculateAccrual(
-                assets[i].totalAmount,
-                assets[i].claimedAmount,
-                stream.startTime,
-                stream.duration,
-                stream.lastClaimed,
+                allocation.totalAmount,
+                allocation.claimedAmount,
+                allocation.startTime,
+                allocation.duration,
+                allocation.lastAccrued,
                 stream.stopTime,
-                block.timestamp,
+                timestamp,
                 stream.isPaused,
                 stream.pauseStart,
-                stream.pausedDuration
+                pausedForToken
             );
 
-            accruedPoint = accrual.accrualPoint;
+            allocation.lastAccrued = accrual.accrualPoint;
 
             if (accrual.claimable > 0) {
-                assets[i].claimedAmount += accrual.claimable;
-                VAULT.withdraw(assets[i].token, recipient, accrual.claimable);
-                emit Claimed(streamId, recipient, assets[i].token, accrual.claimable);
+                allocation.claimedAmount += accrual.claimable;
+                VAULT.withdraw(allocation.token, recipient, accrual.claimable);
+                emit Claimed(streamId, recipient, allocation.token, accrual.claimable);
             }
 
-            if (assets[i].claimedAmount < assets[i].totalAmount) {
+            if (allocation.claimedAmount < allocation.totalAmount) {
                 fullyClaimed = false;
+            }
+
+            if (accrual.accrualPoint > latestAccrualPoint) {
+                latestAccrualPoint = accrual.accrualPoint;
             }
         }
 
-        stream.lastClaimed = accruedPoint;
+        stream.lastClaimed = latestAccrualPoint;
     }
 
     function _finalizeStream(uint256 streamId, bool refundSender)
@@ -434,45 +590,57 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         returns (address recipient, address[] memory tokens, uint256[] memory refunded)
     {
         Stream storage stream = streams[streamId];
-        StreamToken[] storage assets = _streamTokens[streamId];
-        uint256 length = assets.length;
-
-        tokens = new address[](length);
-        refunded = new uint256[](length);
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
+        address[] memory uniqueTokens = _uniqueTokenAddresses(allocations);
+        uint256 uniqueCount = uniqueTokens.length;
+        tokens = uniqueTokens;
+        refunded = new uint256[](uniqueCount);
 
         recipient = ownerOf(streamId);
+        uint256 timestamp = block.timestamp;
+        uint256 latestAccrualPoint = stream.lastClaimed;
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < allocations.length; i++) {
+            TokenAllocation storage allocation = allocations[i];
+            uint256 pausedForToken = _pausedDurationForAllocation(allocation, stream);
             AccountingLib.AccrualResult memory accrual = AccountingLib.calculateAccrual(
-                assets[i].totalAmount,
-                assets[i].claimedAmount,
-                stream.startTime,
-                stream.duration,
-                stream.lastClaimed,
+                allocation.totalAmount,
+                allocation.claimedAmount,
+                allocation.startTime,
+                allocation.duration,
+                allocation.lastAccrued,
                 stream.stopTime,
-                block.timestamp,
+                timestamp,
                 stream.isPaused,
                 stream.pauseStart,
-                stream.pausedDuration
+                pausedForToken
             );
 
+            allocation.lastAccrued = accrual.accrualPoint;
+
             if (accrual.claimable > 0) {
-                assets[i].claimedAmount += accrual.claimable;
-                VAULT.withdraw(assets[i].token, recipient, accrual.claimable);
-                emit Claimed(streamId, recipient, assets[i].token, accrual.claimable);
+                allocation.claimedAmount += accrual.claimable;
+                VAULT.withdraw(allocation.token, recipient, accrual.claimable);
+                emit Claimed(streamId, recipient, allocation.token, accrual.claimable);
             }
 
-            stream.lastClaimed = accrual.accrualPoint;
-            stream.stopTime = accrual.accrualPoint;
-
-            uint256 remainingAmount = assets[i].totalAmount - assets[i].claimedAmount;
+            uint256 remainingAmount = allocation.totalAmount - allocation.claimedAmount;
             if (refundSender && remainingAmount > 0) {
-                VAULT.withdraw(assets[i].token, stream.sender, remainingAmount);
+                VAULT.withdraw(allocation.token, stream.sender, remainingAmount);
             }
 
-            tokens[i] = assets[i].token;
-            refunded[i] = remainingAmount;
+            uint256 index = uniqueCount == 0 ? 0 : _findTokenIndex(tokens, allocation.token);
+            if (uniqueCount > 0) {
+                refunded[index] += remainingAmount;
+            }
+
+            if (accrual.accrualPoint > latestAccrualPoint) {
+                latestAccrualPoint = accrual.accrualPoint;
+            }
         }
+
+        stream.lastClaimed = latestAccrualPoint;
+        stream.stopTime = latestAccrualPoint;
 
         _burn(streamId);
         _removeRecipientStream(recipient, streamId);
