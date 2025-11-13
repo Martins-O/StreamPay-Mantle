@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Stream, type StreamTokenAllocation } from '@/lib/contract';
+import { Stream, type StreamTokenAllocation, type StreamTranche } from '@/lib/contract';
 import {
   useClaimStream,
   useClaimStreamsBatch,
@@ -18,6 +18,39 @@ import { toast } from 'sonner';
 import LiveCounter from './LiveCounter';
 import { TARGET_CHAIN_NAME } from '@/lib/web3';
 import { useNotifications } from '@/contexts/useNotifications';
+
+const formatTimestamp = (value: bigint) => {
+  const milliseconds = Number(value) * 1000;
+  if (!Number.isFinite(milliseconds)) {
+    return value.toString();
+  }
+  return new Date(milliseconds).toLocaleString();
+};
+
+const formatDurationShort = (value: bigint) => {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return '0s';
+  }
+  const units = [
+    { label: 'd', size: 86_400 },
+    { label: 'h', size: 3_600 },
+    { label: 'm', size: 60 },
+  ];
+  let remainder = seconds;
+  const parts: string[] = [];
+  for (const unit of units) {
+    if (remainder >= unit.size) {
+      const valueForUnit = Math.floor(remainder / unit.size);
+      remainder -= valueForUnit * unit.size;
+      parts.push(`${valueForUnit}${unit.label}`);
+    }
+  }
+  if (parts.length === 0) {
+    return `${seconds}s`;
+  }
+  return parts.slice(0, 2).join(' ');
+};
 
 interface StreamTableProps {
   streams: Stream[];
@@ -320,6 +353,14 @@ const StreamTable = ({
               ? 'bg-yellow-400'
               : 'bg-primary animate-pulse';
 
+          const tranchesByToken = stream.tranches?.reduce<Map<string, StreamTranche[]>>((acc, tranche) => {
+            const key = tranche.token.toLowerCase();
+            const current = acc.get(key) ?? [];
+            current.push(tranche);
+            acc.set(key, current);
+            return acc;
+          }, new Map()) ?? new Map();
+
           const tokenBreakdown = stream.tokens.map((tokenAllocation) => {
             const remainingAmount = tokenAllocation.totalAmount > tokenAllocation.claimedAmount
               ? tokenAllocation.totalAmount - tokenAllocation.claimedAmount
@@ -329,6 +370,7 @@ const StreamTable = ({
             const ratePerSecond = stream.duration > 0n
               ? tokenAllocation.totalAmount / stream.duration
               : 0n;
+            const tranches = tranchesByToken.get(tokenAllocation.token.toLowerCase()) ?? [];
 
             return {
               key: tokenAllocation.token,
@@ -338,6 +380,7 @@ const StreamTable = ({
               claimed: tokenAllocation.claimedAmount,
               remaining: remainingAmount,
               claimable: tokenAllocation.claimableAmount,
+              tranches,
             };
           });
 
@@ -430,6 +473,53 @@ const StreamTable = ({
                                     </p>
                                   </div>
                                 </div>
+                                {token.tranches.length > 0 && (
+                                  <div className="mt-3 space-y-2">
+                                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tranches</p>
+                                    <div className="space-y-2">
+                                      {token.tranches.map((tranche, trancheIndex) => {
+                                        const trancheDecimals = tranche.tokenDecimals ?? token.decimals;
+                                        return (
+                                          <div
+                                            key={`${token.key}-${trancheIndex}`}
+                                            className="rounded border border-border/40 bg-background/40 px-3 py-2"
+                                          >
+                                            <div className="flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
+                                              <span>Start: {formatTimestamp(tranche.startTime)}</span>
+                                              <span>Duration: {formatDurationShort(tranche.duration)}</span>
+                                            </div>
+                                            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                                              <div>
+                                                <p className="text-muted-foreground">Amount</p>
+                                                <p className="font-semibold">
+                                                  {formatTokenAmount(tranche.totalAmount, trancheDecimals)}
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p className="text-muted-foreground">Claimed</p>
+                                                <p className="font-semibold">
+                                                  {formatTokenAmount(tranche.claimedAmount, trancheDecimals)}
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p className="text-muted-foreground">Claimable</p>
+                                                <p className="font-semibold">
+                                                  {formatTokenAmount(tranche.claimableAmount ?? 0n, trancheDecimals)}
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p className="text-muted-foreground">Pause offset</p>
+                                                <p className="font-semibold">
+                                                  {formatDurationShort(tranche.pauseAccumulated + tranche.pauseCarry)}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

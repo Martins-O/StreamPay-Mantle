@@ -46,6 +46,9 @@ Thumbs.db
 lib/
 !contracts/lib/forge-std
 !contracts/lib/openzeppelin-contracts
+!frontend/src/lib/
+!frontend/src/lib/**
+!frontend/src/lib/
 
 # Deployment artifacts
 deployment.env

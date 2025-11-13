@@ -242,6 +242,30 @@ contract StreamManagerTest is Test {
         assertEq(assets[0].totalAmount, totalAmount + topUpAmount);
     }
 
+    function testGetStreamTranchesReflectsTopUps() public {
+        uint256 totalAmount = 1_000 * 1e6;
+        uint256 topUpAmount = 250 * 1e6;
+        uint256 duration = 120;
+
+        vm.prank(sender);
+        uint256 streamId = streamManager.createStream(recipient, address(tokenA), totalAmount, duration);
+
+        StreamManager.TokenAllocation[] memory tranches = streamManager.getStreamTranches(streamId);
+        assertEq(tranches.length, 1);
+        assertEq(tranches[0].totalAmount, totalAmount);
+        assertEq(tranches[0].duration, duration);
+
+        vm.warp(block.timestamp + 20);
+        vm.prank(sender);
+        streamManager.topUpStream(streamId, address(tokenA), topUpAmount);
+
+        tranches = streamManager.getStreamTranches(streamId);
+        assertEq(tranches.length, 2);
+        assertEq(tranches[1].totalAmount, topUpAmount);
+        assertEq(tranches[1].duration, duration - 20);
+        assertEq(tranches[1].startTime, block.timestamp);
+    }
+
     function testTopUpDoesNotRetroactivelyStream() public {
         uint256 totalAmount = 1_000 * 1e6;
         uint256 topUpAmount = 500 * 1e6;

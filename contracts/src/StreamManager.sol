@@ -354,6 +354,15 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         return _aggregateTokens(allocations);
     }
 
+    function getStreamTranches(uint256 streamId) external view returns (TokenAllocation[] memory tranches) {
+        TokenAllocation[] storage allocations = _tokenAllocations[streamId];
+        uint256 length = allocations.length;
+        tranches = new TokenAllocation[](length);
+        for (uint256 i = 0; i < length; i++) {
+            tranches[i] = allocations[i];
+        }
+    }
+
     function topUpStream(uint256 streamId, address token, uint256 amount) external nonReentrant whenNotPaused {
         require(token != address(0), "Invalid token");
         require(amount > 0, "Invalid amount");
