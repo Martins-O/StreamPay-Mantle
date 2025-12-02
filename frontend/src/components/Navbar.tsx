@@ -69,8 +69,9 @@ const Navbar = () => {
 
   const navItems = [
     { path: '/', label: 'Home' },
-    { path: '/how-it-works', label: 'How It Works' },
-    { path: '/about', label: 'About' },
+    { path: '/business', label: 'Business' },
+    { path: '/investor', label: 'Investor' },
+    { path: '/docs', label: 'Docs' },
   ];
 
   const truncateAddress = (addr: string) => {
@@ -145,8 +146,8 @@ const Navbar = () => {
               <LogoMark />
             </span>
             <div className="flex flex-col leading-tight">
-              <span className="text-lg font-semibold tracking-tight text-foreground">StreamPay Mantle</span>
-              <span className="text-xs uppercase tracking-[0.35em] text-muted-foreground group-hover:text-primary transition-colors">Real-time payments</span>
+              <span className="text-lg font-semibold tracking-tight text-foreground">Mantle StreamYield</span>
+              <span className="text-xs uppercase tracking-[0.35em] text-muted-foreground group-hover:text-primary transition-colors">RealFi + AI streaming</span>
             </div>
           </Link>
 

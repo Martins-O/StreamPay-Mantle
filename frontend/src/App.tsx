@@ -13,6 +13,8 @@ import HowItWorks from "./pages/HowItWorks";
 import About from "./pages/About";
 import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
+import Business from "./pages/Business";
+import Investor from "./pages/Investor";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +29,8 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/business" element={<Business />} />
+                <Route path="/investor" element={<Investor />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/about" element={<About />} />

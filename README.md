@@ -1,282 +1,141 @@
-# 🌊 StreamPay Mantle
+# Mantle StreamYield
 
-**Real-time payment streaming protocol on Mantle L2 testnet**
+> AI-powered tokenized cashflow + yield streaming protocol for real-world businesses on Mantle.
 
-StreamPay allows users to continuously stream one or many ERC-20 tokens to recipients over time. Each stream mints a transferable NFT receipt, enabling recipients to batch claim across payrolls or hand off ownership instantly. Senders can top up, extend, pause, or cancel streams at will.
+Mantle StreamYield extends the original StreamPay contracts into a full-stack RealFi rail:
 
-![StreamPay Demo](https://via.placeholder.com/800x400/1e40af/ffffff?text=StreamPay+Mantle+Demo)
+- **Businesses** tokenize subscriptions, invoices, or rent into `RevenueToken`s, stream repayments via the `StreamEngine`, and publish AI-signed risk updates.
+- **Investors** deposit stablecoins into `YieldPool`s, receive `YieldBackedToken` shares, and earn pro-rata yield the moment revenue flows in.
+- **AI Risk Service** continuously scores each merchant, the backend signs payloads, and `RiskOracleAdapter` enforces exposure on-chain.
 
-## 🎯 Overview
-
-StreamPay Mantle enables:
-- **Real-time token streaming** with second-by-second precision
-- **Transferable NFT receipts** - each stream issues an ERC-721 proving the right to future funds
-- **Flexible claiming** - recipients batch claim accrued amounts across many streams
-- **Sender control** - top up, extend, or cancel and reclaim remaining tokens
-- **Low-cost operations** on Mantle L2 for minimal gas fees
-- **Live visualization** with animated flow counters
-
-## 🏗️ Architecture
+## System Architecture
 
 ```mermaid
-graph TB
-    A[Frontend] --> B[StreamManager Contract]
-    B --> C[StreamVault Contract]
-    B --> D[AccountingLib Library]
-    C --> E[ERC-20 Token]
-
-    subgraph "Mantle L2 Testnet"
-        B
-        C
-        D
-        E
+graph TD
+    subgraph Mantle
+        RF[RevenueTokenFactory]
+        RT[RevenueToken]
+        SE[StreamEngine]
+        YP[YieldPool]
+        YBT[YieldBackedToken]
+        RO[RiskOracleAdapter]
     end
 
-    F[Sender] --> A
-    G[Recipient] --> A
+    subgraph Off-chain
+        FE[React Frontend]
+        BE[TypeScript Backend]
+        AI[FastAPI Risk Service]
+        DB[(Lightweight Store)]
+    end
+
+    Business --> FE
+    Investor --> FE
+    FE <--> BE
+    BE <--> AI
+    BE -->|signed payload| RO
+    Business --> RF --> RT --> SE --> YP
+    RT --> RO
+    SE --> YP --> InvestFlow[Investors]
 ```
 
-### Core Components
+### Repo Layout
 
-1. **StreamManager.sol** - Main contract handling stream lifecycle
-2. **StreamVault.sol** - Secure token escrow and withdrawal
-3. **AccountingLib.sol** - Pure math for streaming calculations
-4. **Frontend** - Vite + React + Wagmi for wallet integration and real-time UI
+| Path | Purpose |
+| --- | --- |
+| `contracts/` | Foundry workspace with `RevenueTokenFactory`, `RevenueToken`, `YieldPool`, `YieldBackedToken`, `RiskOracleAdapter`, and `StreamEngine` (wrapper around legacy streaming logic). |
+| `frontend/` | Vite + React app (Wagmi, shadcn) with Landing, Business Dashboard, Investor Dashboard, and the legacy streaming console. |
+| `backend/` | Node.js + Express API for business registration, AI orchestration, and risk signing. Includes Vitest coverage for the risk service. |
+| `ai-service/` | FastAPI microservice producing deterministic risk scores based on revenue + volatility inputs. |
+| `docs/` | Architecture notes, deployment checklist, demo script, and the new `pitch.md`. |
 
-## 🚀 Quick Start
+## Getting Started
 
-### Prerequisites
-
-- Node.js 18+
-- Git
-- MetaMask or compatible wallet
-- Mantle testnet MNT tokens
-
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/yourusername/streampay-mantle.git
-cd streampay-mantle
-```
-
-### 2. Deploy Contracts
+### 1. Contracts (Mantle)
 
 ```bash
 cd contracts
+cp .env.example .env   # fill PRIVATE_KEY + RPC if deploying
+forge test              # runs new StreamYield integration tests
+./deploy.sh             # deploy StreamEngine + StreamYield suite to Mantle testnet
+```
+
+### 2. Backend API
+
+```bash
+cd backend
 cp .env.example .env
-# Edit .env with your private key and Mantlescan API key
-
-# Run tests
-forge test
-
-# Deploy to Mantle testnet
-./deploy.sh
-
-# Copy the printed contract addresses into contracts/deployment.env and frontend/.env.local
-# (STREAM_MANAGER_ADDRESS, STREAM_VAULT_ADDRESS, MOCK_USDT_ADDRESS, STREAM_TOKEN_ADDRESS)
-```
-
-### 3. Setup Frontend
-
-```bash
-cd ../frontend
-cp .env.example .env.local
-# Populate contract addresses from deployment
-#   VITE_STREAM_MANAGER_ADDRESS=
-#   VITE_STREAM_VAULT_ADDRESS=
-#   VITE_MOCK_USDT_ADDRESS=
-#   VITE_STREAM_TOKEN_ADDRESS=
-#   VITE_MANTLE_RPC_URL=https://mantle-sepolia.drpc.org
-# Optional: set VITE_WALLETCONNECT_PROJECT_ID for WalletConnect support
-
+# edit PORT, AI_SERVICE_URL, RISK_SIGNER_PRIVATE_KEY, RISK_ORACLE_ADDRESS, etc.
 npm install
-npm run dev
+npm run dev             # Express server on http://localhost:4000
+# npm test              # Vitest suite covering risk signing helpers
 ```
 
-### 4. Access Application
-
-Open [http://localhost:3000](http://localhost:3000) and:
-1. Connect your wallet (MetaMask, browser extension, or WalletConnect)
-2. Switch to Mantle testnet
-3. Mint the configured stream token (mock USDT) using the deployed contract
-4. Create your first stream!
-
-## 📋 Features
-
-### ✅ Implemented
-
-- [x] **Core Streaming Logic**
-  - Create streams with custom duration and amount
-  - Real-time calculation of streamable amounts
-  - Cancel streams with automatic refunds
-
-- [x] **Smart Contracts**
-  - Comprehensive test suite (30 tests, 100% pass rate)
-  - Gas-optimized Solidity 0.8.30
-  - OpenZeppelin security standards
-  - Event emission for indexing
-
-- [x] **Frontend Interface**
-  - Wallet connection (MetaMask, WalletConnect QR, browser extensions)
-  - Real-time animated counters
-  - Stream visualization charts
-  - Responsive design with Tailwind CSS
-
-- [x] **Advanced Streaming Controls**
-  - Transferable ERC-721 receipts per stream
-  - Multi-token allocations within a single stream
-  - Batch claim function for payroll-style withdrawals
-  - Sender-driven top-ups and duration extensions
-
-- [x] **Developer Experience**
-  - Automated deployment scripts
-  - Contract verification on Mantlescan
-  - TypeScript throughout
-  - Comprehensive documentation
-
-### 🔮 Future Improvements
-
-- [ ] **Stream Templates** - Save and reuse multi-recipient configurations
-- [ ] **Advanced Analytics** - Token-by-token forecast charts and yield breakdowns
-- [ ] **Notification Enhancements** - SMS/email bridges in addition to on-chain alerts
-- [ ] **Role-Based Access** - Delegate stream management to trusted operators
-
-## 🔧 Technical Details
-
-### Gas Optimization
-
-- **Stream Creation**: ~358,000 gas
-- **Claim**: ~399,000 gas
-- **Cancel**: ~388,000 gas
-
-### Security Features
-
-- Reentrancy protection with OpenZeppelin guards
-- Pausable contract for emergency stops
-- Safe math for all calculations (Solidity 0.8+)
-- Comprehensive input validation
-
-### Precision
-
-- Rate calculations use second-precision
-- No floating point - all integer arithmetic
-- Rounding handled correctly for edge cases
-
-## 📚 API Reference
-
-### Core Functions
-
-#### `createStream(recipient, token, totalAmount, duration)`
-Creates a single-token payment stream and mints an NFT receipt.
-
-#### `createStreamsBatch(params[])`
-Creates many streams in one transaction. Each `params[i]` includes:
-- `recipient` (address)
-- `tokens` (address[]): array of ERC-20 addresses
-- `totalAmounts` (uint256[]): matching array of totals per token
-- `duration` (uint256): seconds of streaming
-
-#### `claim(streamId)`
-Claims accumulated tokens from a stream. Callable by the NFT holder.
-
-#### `claimStreamsBatch(streamIds[])`
-Aggregates multiple stream claims into a single transaction.
-
-#### `cancelStream(streamId)`
-Cancels a stream and refunds remaining allocations to the sender.
-
-#### `topUpStream(streamId, token, amount)`
-Adds more liquidity (or a new token) to an active stream.
-
-#### `extendStreamDuration(streamId, additionalDuration)`
-Extends the accrual window without redeploying the stream.
-
-### View Functions
-
-#### `getStream(streamId)`
-Returns the stream metadata plus the list of token allocations.
-
-#### `getStreamableAmounts(streamId)`
-Returns two arrays: token addresses and the currently claimable amount for each.
-
-## 🧪 Testing
-
-The project includes comprehensive test coverage:
+### 3. AI Risk Microservice
 
 ```bash
-cd contracts
-forge test -vv
+cd ai-service
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app:app --reload --port 8001
 ```
 
-**Test Results:**
-```
-Ran 4 test suites: 30 tests passed, 0 failed
-- StreamManager: 14 tests
-- StreamVault: 3 tests
-- AccountingLib: 11 tests
-- Integration: 2 tests
-```
-
-## 🌐 Deployment
-
-### Mantle Sepolia Testnet
-
-- **Network ID**: 5003
-- **RPC**: https://mantle-sepolia.drpc.org
-- **Explorer**: https://explorer.testnet.mantle.xyz
-
-### Contract Addresses
-
-After deployment, addresses are saved to `deployment.env`:
+### 4. Frontend
 
 ```bash
-STREAM_MANAGER_ADDRESS=0x...
-STREAM_VAULT_ADDRESS=0x...
-MOCK_USDT_ADDRESS=0x...
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Setup
-
-```bash
-# Install dependencies
-npm install -g @foundry-rs/foundry
-
-# Contract development
-cd contracts
-forge install
-forge test
-
-# Frontend development
 cd frontend
+cp .env.example .env.local
+# populate VITE_* addresses (StreamEngine, RevenueFactory, YieldPool, backend URL)
 npm install
-npm run dev
+npm run dev             # Vite dev server on http://localhost:3000
 ```
 
-## 📄 License
+### Dev Workflow
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+1. Start the AI service.
+2. Boot the backend (`npm run dev`). It will call the AI service, sign risk payloads, and expose `/api/*` routes.
+3. Launch the frontend to use the landing page plus Business/Investor dashboards.
+4. Use the legacy `/dashboard` route for low-level stream management if needed.
 
-## 🙏 Acknowledgments
+## Key Features
 
-- **Mantle Network** for the L2 infrastructure
-- **OpenZeppelin** for secure contract libraries
-- **Wagmi** for excellent Web3 React hooks
-- **Foundry** for fast Solidity development
+- **RevenueTokenFactory + RevenueToken** – tokenizes future cashflow with expected revenue / tenor metadata. Businesses or the factory can link tokens to pools.
+- **YieldPool + YieldBackedToken** – share-based pool with live `totalAssets`, capacity caps derived from AI risk band, and `deposit/withdraw/onRevenueReceived` flows.
+- **RiskOracleAdapter** – verifies ECDSA payloads from the backend signer, stores score + band, and exposes data to pools or UIs.
+- **StreamEngine** – wraps the proven `StreamManager` streaming code while tagging streams with YieldPool metadata.
+- **Backend API** – handles business registration, fetches AI scores, signs risk payloads, and exposes investor-ready pool metrics.
+- **AI Microservice** – FastAPI scoring endpoint with deterministic rules using revenue / volatility / missed payments → `LOW/MEDIUM/HIGH` bands.
+- **Frontend UX**
+  - Landing page rethemed for Mantle StreamYield with CTA for Businesses vs Investors.
+  - Business dashboard: register profile, refresh AI risk, mint RevenueTokens via Wagmi, and view live streams.
+  - Investor dashboard: browse pools, view Mantle metrics, approve + deposit stablecoins into YieldPool contracts.
 
-## 📞 Support
+## Testing
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/streampay-mantle/issues)
-- **Documentation**: [Full technical docs](./docs/)
-- **Discord**: [Join our community](https://discord.gg/streampay)
+| Layer | Command |
+| --- | --- |
+| Smart contracts | `cd contracts && forge test` |
+| Backend | `cd backend && npm test` (Vitest) |
+| Frontend | `cd frontend && npm run lint` / `npm run test` (if configured) |
 
----
+> The forge suite covers the new StreamYield integration: RevenueToken minting, capacity gating from `RiskOracleAdapter`, and signature validation. Backend Vitest specs cover risk-payload signing (requires Node deps).
 
-**Built with ❤️ for the Mantle ecosystem**
+## Demo Script
+
+1. **Business flow**
+   - Connect wallet on `/business`, register company metadata.
+   - Refresh risk score – backend calls the AI service, signs payload, and the UI shows band + timestamp.
+   - Mint a `RevenueToken` (uses Wagmi + Factory). Stream assets via `/dashboard` (legacy console) into the selected `YieldPool`.
+2. **Investor flow**
+   - Visit `/investor`, pick a pool, review AI risk & APY, approve USDC, and deposit. The UI calls `deposit()` on the configured YieldPool.
+3. **Risk telemetry**
+   - Trigger `/api/business/:address/risk` to push a new score. The risk band instantly updates on both dashboards.
+
+## Why Mantle
+
+- **Ultra-low fees**: The StreamEngine mints NFTs + streams multiple ERC-20s for pennies on Mantle testnet.
+- **Modular stack**: Mantle’s modular rollup lets us compose RealFi rails (revenue tokens + AI oracles) without touching L1.
+- **RealFi focus**: Mantle’s 2025 hackathon theme aligns with tokenized cashflow + AI underwriting — StreamYield showcases a full vertical slice.
+
+## Docs & Pitch
+
+See `docs/` for architecture, deployment steps, and the new [`docs/pitch.md`](docs/pitch.md) cheat sheet for hackathon judges.

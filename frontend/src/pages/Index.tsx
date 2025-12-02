@@ -19,48 +19,48 @@ import Footer from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 
 const heroCopy = {
-  heading: 'Continuous crypto payouts without cron jobs or trust issues.',
+  heading: 'Tokenize revenue. Stream AI-scored yield on Mantle.',
   subheading:
-    'StreamPay Mantle lets teams, freelancers, and DAOs move tokens every second on Mantle Layer 2. Funds are escrowed, yield-ready, and always transparent.',
+    'Mantle StreamYield turns invoices, rent, or subscription ARR into live on-chain cashflow. RevenueTokens fund a shared YieldPool while the AI Risk Oracle signs updated exposure in real time.',
   ctas: [
-    { label: 'Launch App', to: '/dashboard', icon: PlayCircle, variant: 'primary' as const },
-    { label: 'See How It Works', to: '/how-it-works', icon: ArrowRight, variant: 'secondary' as const },
+    { label: 'I’m a Business', to: '/business', icon: Rocket, variant: 'primary' as const },
+    { label: 'I’m an Investor', to: '/investor', icon: ArrowRight, variant: 'secondary' as const },
   ],
 };
 
 const problemPoints = [
   {
     icon: AlarmCheck,
-    title: 'Late payouts create friction',
-    description: 'Traditional crypto payroll happens in lumps. Receivers wait weeks and builders lose momentum.',
+    title: 'Working capital trapped in invoices',
+    description: 'Vendors wait 30-90 days to convert ARR or rent into usable liquidity, stalling hiring and growth.',
   },
   {
     icon: Route,
-    title: 'Manual scripts keep breaking',
-    description: 'Teams glue together bots and spreadsheets just to drip funds. One RPC hiccup and everyone is in support tickets.',
+    title: 'Fragmented streaming rails',
+    description: 'Revenue-based financing still relies on spreadsheets. There’s no single primitive for streams, vaults, and risk data.',
   },
   {
     icon: ShieldCheck,
-    title: 'Escrow is rarely trustworthy',
-    description: 'Most solutions lock funds in custodial wallets or leave recipients guessing if money is really there.',
+    title: 'Risk is opaque',
+    description: 'Investors can’t trust off-chain PDFs. They need signed AI risk updates before deploying stablecoins.',
   },
 ];
 
 const solutionHighlights = [
   {
     icon: Waves,
-    title: 'Real-time token streaming',
-    description: 'Seconds-based accrual handled on-chain. Recipients can withdraw exactly what they earned, whenever they want.',
+    title: 'RevenueToken factory',
+    description: 'Deploy ERC-20 claims backed by ARR, trade finance, or rent, then stream repayments through StreamEngine.',
   },
   {
     icon: PiggyBank,
-    title: 'Vault with built-in yield rails',
-    description: 'Idle balances route into Mantle-native strategies so streamed funds earn while waiting to be claimed.',
+    title: 'YieldPool + YBT',
+    description: 'Investors deposit USDC/MNT, receive YieldBackedToken shares, and earn real-time revenue distribution.',
   },
   {
     icon: Workflow,
-    title: 'Pause, resume, and cancel safely',
-    description: 'Senders keep control over unstreamed tokens without clawback drama. Everything is enforced by StreamManager.',
+    title: 'AI Risk Oracle',
+    description: 'A backend signer feeds FastAPI scoring outputs into RiskOracleAdapter for trustless underwriting.',
   },
 ];
 
@@ -91,16 +91,16 @@ const metrics = [
 
 const useCases = [
   {
-    title: 'Global payroll',
-    description: 'Compensate contributors continuously while preserving runway oversight. Stop streams the moment work pauses.',
+    title: 'SaaS ARR financing',
+    description: 'Turn annual subscriptions into instant liquidity while investors receive second-by-second revenue splits.',
   },
   {
-    title: 'Subscription rails',
-    description: 'Replace renewal invoices with second-based access to tooling, APIs, or content tiers.',
+    title: 'Invoice / trade finance',
+    description: 'Embed StreamYield into logistics partners so receivables fund a shared Mantle pool with live risk scores.',
   },
   {
-    title: 'Grants & milestone funding',
-    description: 'Distribute community or ecosystem grants gradually with real-time insights on release cadence.',
+    title: 'Real estate cashflow',
+    description: 'Tokenize rent rolls and stream payments to liquidity providers that want transparent RealFi exposure.',
   },
 ];
 
@@ -160,7 +160,7 @@ const Index = () => (
             <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}>
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-primary">
                 <Sparkle className="h-3 w-3" />
-                Mantle-native payment streaming
+                RealFi + AI on Mantle
               </div>
               <h1 className="mt-6 text-4xl font-bold leading-tight md:text-6xl">
                 {heroCopy.heading}
@@ -208,7 +208,7 @@ const Index = () => (
                   <Rocket className="h-10 w-10 text-primary" />
                   <div>
                     <p className="text-sm uppercase tracking-wide text-muted-foreground">Live analytics snapshot</p>
-                    <p className="text-2xl font-semibold">StreamPay Control Center</p>
+                    <p className="text-2xl font-semibold">StreamYield Ops Console</p>
                   </div>
                 </div>
                 <div className="mt-8 space-y-6">
@@ -266,7 +266,7 @@ const Index = () => (
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
               <h2 className="text-3xl font-bold md:text-4xl">The old way slows teams down.</h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                Payment drips stitched together with spreadsheets, cron jobs, and manual claims equal risk and wasted time. StreamPay removes the friction.
+                Payment drips stitched together with spreadsheets, cron jobs, and manual claims equal risk and wasted time. Mantle StreamYield removes the friction.
               </p>
               <div className="mt-8 space-y-5">
                 {problemPoints.map(point => (
@@ -284,9 +284,9 @@ const Index = () => (
             </motion.div>
 
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.1 }} viewport={{ once: true }}>
-              <h2 className="text-3xl font-bold md:text-4xl">StreamPay handles the heavy lifting.</h2>
+              <h2 className="text-3xl font-bold md:text-4xl">StreamYield handles the heavy lifting.</h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                A battle-tested StreamManager + StreamVault combo powers continuous payouts, governance-friendly controls, and capital efficiency in one place.
+                A modular stack of RevenueTokenFactory, StreamEngine, YieldPool, and the RiskOracleAdapter makes RealFi primitives composable on Mantle.
               </p>
               <div className="mt-8 space-y-5">
                 {solutionHighlights.map(point => (
@@ -341,7 +341,7 @@ const Index = () => (
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }} className="text-center">
             <h2 className="text-3xl font-bold md:text-4xl">Built for the builders who move fast.</h2>
             <p className="mt-4 text-muted-foreground md:text-lg">
-              From remote DAOs to SaaS platforms, StreamPay removes the busywork of recurring payouts so teams can focus on the product.
+              From SaaS finance desks to proptech operators, Mantle StreamYield packages underwriting, tokenization, and streaming in one battle-tested repo.
             </p>
           </motion.div>
           <div className="mt-12 grid gap-8 md:grid-cols-3">
@@ -365,14 +365,14 @@ const Index = () => (
             <Card className="glass-card overflow-hidden rounded-3xl border border-primary/30 bg-primary/10 p-10 text-center shadow-[0_20px_120px_rgba(56,189,248,0.25)]">
               <h2 className="text-3xl font-bold md:text-4xl">Ready to make every second count?</h2>
               <p className="mt-4 text-muted-foreground md:text-lg">
-                Launch StreamPay, create your first stream, and give your community a realtime payment experience they will brag about.
+                Launch Mantle StreamYield, mint a RevenueToken, and invite investors to deposit into your AI-rated YieldPool.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-                  <Link to="/dashboard">
+                  <Link to="/business">
                     <div className="flex items-center gap-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary shadow-lg">
                       <PlayCircle className="h-4 w-4" />
-                      Launch app
+                      Business dashboard
                     </div>
                   </Link>
                 </motion.div>

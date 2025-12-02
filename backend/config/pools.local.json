@@ -1,0 +1,13 @@
+[
+  {
+    "id": "acme-usdc",
+    "name": "Acme Subscriptions",
+    "symbol": "ACME",
+    "baseToken": "USDC",
+    "revenueToken": "0xRevenueToken",
+    "yieldPool": "0xYieldPool",
+    "business": "0xBusiness",
+    "tenorDays": 90,
+    "targetApy": 0.18
+  }
+]
