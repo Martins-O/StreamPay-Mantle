@@ -1,20 +1,14 @@
+import { Suspense } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { WagmiProvider } from "wagmi";
 import { config } from "./lib/web3";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import HowItWorks from "./pages/HowItWorks";
-import About from "./pages/About";
-import Docs from "./pages/Docs";
-import NotFound from "./pages/NotFound";
-import Business from "./pages/Business";
-import Investor from "./pages/Investor";
+import { appRoutes, fallbackRoute } from "./routes";
 
 const queryClient = new QueryClient();
 
@@ -27,17 +21,20 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/business" element={<Business />} />
-                <Route path="/investor" element={<Investor />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/how-it-works" element={<HowItWorks />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/docs" element={<Docs />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense
+                fallback={
+                  <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
+                    Loading experience…
+                  </div>
+                }
+              >
+                <Routes>
+                  {appRoutes.map(({ path, Component }) => (
+                    <Route key={path} path={path} element={<Component />} />
+                  ))}
+                  <Route path={fallbackRoute.path} element={<fallbackRoute.Component />} />
+                </Routes>
+              </Suspense>
             </BrowserRouter>
           </TooltipProvider>
         </ThemeProvider>

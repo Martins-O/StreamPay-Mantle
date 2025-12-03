@@ -15,6 +15,13 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
+import { navRoutes } from '@/routes';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const LogoMark = () => (
   <svg
@@ -67,11 +74,10 @@ const Navbar = () => {
 
   const isWrongNetwork = isConnected && chainId !== undefined && chainId !== TARGET_CHAIN_ID;
 
-  const navItems = [
-    { path: '/', label: 'Home' },
-    { path: '/business', label: 'Business' },
-    { path: '/investor', label: 'Investor' },
-    { path: '/docs', label: 'Docs' },
+  const navItems = navRoutes;
+  const opsRoutes = [
+    { path: '/business', label: 'Business workspace' },
+    { path: '/investor', label: 'Investor cockpit' },
   ];
 
   const truncateAddress = (addr: string) => {
@@ -153,7 +159,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {location.pathname !== '/dashboard' && navItems.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -164,14 +170,20 @@ const Navbar = () => {
                 {item.label}
               </Link>
             ))}
-            {isConnected && location.pathname !== '/dashboard' && (
-              <Link
-                to="/dashboard"
-                className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
-              >
-                Dashboard
-              </Link>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="px-0 text-sm font-medium text-muted-foreground hover:text-primary">
+                  Operations
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="glass-card border-border/60">
+                {opsRoutes.map((route) => (
+                  <DropdownMenuItem key={route.path} asChild>
+                    <Link to={route.path}>{route.label}</Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="flex items-center gap-2">
@@ -241,7 +253,7 @@ const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="right" className="glass-card w-[300px]">
                 <div className="flex flex-col gap-6 mt-6">
-                  {location.pathname !== '/dashboard' && navItems.map((item) => (
+                  {navItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
@@ -253,15 +265,21 @@ const Navbar = () => {
                       {item.label}
                     </Link>
                   ))}
-                  {isConnected && location.pathname !== '/dashboard' && (
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setMobileOpen(false)}
-                      className="text-lg font-medium transition-colors hover:text-primary text-muted-foreground"
-                    >
-                      Dashboard
-                    </Link>
-                  )}
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Operations</p>
+                    {opsRoutes.map((route) => (
+                      <Link
+                        key={route.path}
+                        to={route.path}
+                        onClick={() => setMobileOpen(false)}
+                        className={`block text-lg font-medium transition-colors hover:text-primary ${
+                          location.pathname === route.path ? 'text-primary' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {route.label}
+                      </Link>
+                    ))}
+                  </div>
 
                   <Button
                     variant="ghost"

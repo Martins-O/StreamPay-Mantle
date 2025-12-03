@@ -15,6 +15,7 @@ export interface RiskResponse {
   bandIndex: number;
   lastUpdated: number;
   signature?: string;
+  rationale?: string;
 }
 
 export interface PoolResponse {
@@ -33,6 +34,12 @@ export interface PoolResponse {
     investors: number;
     risk: RiskResponse | null;
   };
+}
+
+export interface BackendConfigResponse {
+  riskOracleAddress: string;
+  aiServiceUrl: string;
+  poolRegistryPath: string;
 }
 
 const baseUrl = BACKEND_BASE_URL.replace(/\/$/, '');
@@ -74,3 +81,5 @@ export const refreshRisk = (address: string, overrides: Partial<{ monthlyRevenue
 export const fetchPools = () => request<PoolResponse[]>(`/api/pools`);
 
 export const fetchPoolMetrics = (id: string) => request<PoolResponse['metrics']>(`/api/pools/${id}/metrics`);
+
+export const fetchBackendConfig = () => request<BackendConfigResponse>('/api/config');
