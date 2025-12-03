@@ -45,7 +45,15 @@ contract RiskOracleAdapter is Ownable {
 
     function hashPayload(RiskPayload memory payload) public pure returns (bytes32) {
         return keccak256(
-            abi.encode(RISK_TYPEHASH, payload.subject, payload.score, payload.band, payload.timestamp, payload.expiry, payload.nonce)
+            abi.encode(
+                RISK_TYPEHASH,
+                payload.subject,
+                payload.score,
+                payload.band,
+                payload.timestamp,
+                payload.expiry,
+                payload.nonce
+            )
         );
     }
 

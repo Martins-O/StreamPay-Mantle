@@ -20,11 +20,7 @@ contract RevenueTokenFactory is Ownable {
 
     event BusinessApprovalUpdated(address indexed business, bool approved);
     event RevenueTokenCreated(
-        address indexed business,
-        address indexed token,
-        uint256 expectedRevenue,
-        uint256 tenor,
-        address paymentToken
+        address indexed business, address indexed token, uint256 expectedRevenue, uint256 tenor, address paymentToken
     );
 
     constructor() Ownable(msg.sender) {}
@@ -49,12 +45,7 @@ contract RevenueTokenFactory is Ownable {
         }
 
         RevenueToken token = new RevenueToken(
-            msg.sender,
-            params.name,
-            params.symbol,
-            params.expectedRevenue,
-            params.tenor,
-            params.paymentToken
+            msg.sender, params.name, params.symbol, params.expectedRevenue, params.tenor, params.paymentToken
         );
         tokenAddr = address(token);
         _businessTokens[msg.sender].push(tokenAddr);

@@ -148,7 +148,11 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
         return tokens;
     }
 
-    function _aggregateTokens(TokenAllocation[] storage allocations) internal view returns (StreamToken[] memory tokens) {
+    function _aggregateTokens(TokenAllocation[] storage allocations)
+        internal
+        view
+        returns (StreamToken[] memory tokens)
+    {
         address[] memory unique = _uniqueTokenAddresses(allocations);
         uint256 count = unique.length;
         tokens = new StreamToken[](count);
@@ -180,6 +184,7 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
             }
         }
     }
+
     mapping(address => uint256[]) public senderStreams;
     mapping(address => uint256[]) public recipientStreams;
     mapping(address => mapping(uint256 => uint256)) private _recipientStreamIndex;
