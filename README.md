@@ -50,13 +50,21 @@ graph TD
 
 ## Getting Started
 
+### 0. Environment checklist
+
+1. `cp contracts/.env.example contracts/.env` and fill `PRIVATE_KEY`, RPC URLs, and (optionally) `RISK_SIGNER_ADDRESS`. When omitted, the deployer address becomes the signer used by the backend + oracle.
+2. `cp backend/.env.example backend/.env` and set `AI_SERVICE_URL`, `RISK_SIGNER_PRIVATE_KEY`, and `RISK_ORACLE_ADDRESS` (after deployment).
+3. `cp frontend/.env.example frontend/.env.local` and paste the deployed contract addresses once the Foundry script runs.
+4. `cd ai-service && ./setup.sh` to create the virtualenv and install FastAPI deps.
+
 ### 1. Contracts (Mantle)
 
 ```bash
 cd contracts
-cp .env.example .env   # fill PRIVATE_KEY + RPC if deploying
-forge test              # runs new StreamYield integration tests
-./deploy.sh             # deploy StreamEngine + StreamYield suite to Mantle testnet
+cp .env.example .env   # fill PRIVATE_KEY, RPC_URL, optional overrides
+forge test              # runs StreamYield integration tests
+./deploy.sh             # deploy StreamEngine, YieldPool, oracle, factory
+# copy the printed addresses into contracts/deployment.env, backend/.env, frontend/.env.local
 ```
 
 ### 2. Backend API
@@ -91,10 +99,10 @@ npm run dev             # Vite dev server on http://localhost:3000
 
 ### Dev Workflow
 
-1. Start the AI service.
-2. Boot the backend (`npm run dev`). It will call the AI service, sign risk payloads, and expose `/api/*` routes.
-3. Launch the frontend to use the landing page plus Business/Investor dashboards.
-4. Use the legacy `/dashboard` route for low-level stream management if needed.
+1. Start the AI service (`cd ai-service && source .venv/bin/activate && uvicorn app:app --reload --port 8001`) or run all components via `./start-services.sh` from repo root.
+2. Boot the backend (`cd backend && npm run dev`). It loads contract/risk addresses from `.env`, polls the AI service, signs payloads, and exposes `/api/*` routes + metrics.
+3. Launch the frontend (`cd frontend && npm run dev`) to access landing, Business workspace, Investor cockpit, and the legacy console.
+4. Touch the legacy `/legacy-console` route whenever you need the original multi-stream tooling.
 
 ## Key Features
 

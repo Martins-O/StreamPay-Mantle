@@ -41,11 +41,18 @@ Edit `.env` with your configuration:
 ```bash
 # Deployment
 PRIVATE_KEY=your_private_key_without_0x_prefix
+# optional: override, otherwise PRIVATE_KEY account is also the risk signer
+RISK_SIGNER_ADDRESS=
 MANTLESCAN_API_KEY=your_mantlescan_api_key
 
 # RPC URLs
 MANTLE_TESTNET_RPC=https://mantle-sepolia.drpc.org
 MANTLE_MAINNET_RPC=https://rpc.mantle.xyz
+
+# Optional overrides
+BASE_TOKEN_ADDRESS=0xexistingStablecoin
+YIELD_POOL_NAME="StreamYield Primary"
+YIELD_POOL_SYMBOL="sYLD"
 ```
 
 #### Frontend Environment
@@ -55,14 +62,16 @@ cd ../frontend
 cp .env.example .env.local
 ```
 
-Edit `.env.local`:
+Edit `.env.local` (values copied from deployment logs):
 
 ```bash
 # Contract addresses (populate after deployment)
 VITE_STREAM_MANAGER_ADDRESS=0x0000000000000000000000000000000000000000
 VITE_STREAM_VAULT_ADDRESS=0x0000000000000000000000000000000000000000
 VITE_MOCK_USDT_ADDRESS=0x0000000000000000000000000000000000000000
-VITE_STREAM_TOKEN_ADDRESS=0x0000000000000000000000000000000000000000
+VITE_REVENUE_FACTORY_ADDRESS=0x0000000000000000000000000000000000000000
+VITE_RISK_ORACLE_ADDRESS=0x0000000000000000000000000000000000000000
+VITE_PRIMARY_YIELD_POOL=0x0000000000000000000000000000000000000000
 
 # RPC URL (override if you run your own node)
 VITE_MANTLE_RPC_URL=https://mantle-sepolia.drpc.org
@@ -116,9 +125,10 @@ chmod +x verify.sh
 
 The script will:
 - Run tests before deployment
-- Deploy `StreamManager` (which internally creates `StreamVault`)
-- Deploy the mock USDT token (your stream token)
-- Print the deployed addresses so you can copy them into your env files
+- Deploy `StreamEngine` (which internally creates `StreamVault`)
+- Deploy a mock USDT token (unless `BASE_TOKEN_ADDRESS` is set)
+- Deploy `RevenueTokenFactory`, `RiskOracleAdapter`, and a `YieldPool` + `YieldBackedToken`
+- Print every deployed address so you can copy them into your env files
 
 #### Option B: Manual Deployment
 
@@ -137,34 +147,35 @@ forge script script/Deploy.s.sol:DeployScript \
 
 After successful deployment, you should see:
 
-```bash
+```
 ✅ Deployment successful!
-StreamManager deployed to: 0x...
+StreamEngine deployed to: 0x...
 StreamVault deployed to: 0x...
-Mock USDT deployed to: 0x...
+Base token (Mock or existing) at: 0x...
+RevenueTokenFactory deployed to: 0x...
+RiskOracleAdapter deployed to: 0x...
+YieldPool deployed to: 0x...
+YieldBackedToken deployed to: 0x...
 ```
 
 ### 4. Update Frontend Configuration
 
 Copy the deployed addresses to your frontend environment:
 
-Create a `contracts/deployment.env` file (or update it) with the addresses printed by the deployment script:
+Manually create/update `contracts/deployment.env` with the addresses printed by the deployment script:
 
 ```
-STREAM_MANAGER_ADDRESS=0x...
+STREAM_ENGINE_ADDRESS=0x...
 STREAM_VAULT_ADDRESS=0x...
 MOCK_USDT_ADDRESS=0x...
-STREAM_TOKEN_ADDRESS=0x...
+REVENUE_TOKEN_FACTORY_ADDRESS=0x...
+RISK_ORACLE_ADAPTER_ADDRESS=0x...
+YIELD_POOL_ADDRESS=0x...
+YIELD_BACKED_TOKEN_ADDRESS=0x...
 ```
 
-Then copy those values into `frontend/.env.local`:
-
-```
-#   VITE_STREAM_MANAGER_ADDRESS=
-#   VITE_STREAM_VAULT_ADDRESS=
-#   VITE_MOCK_USDT_ADDRESS=
-#   VITE_STREAM_TOKEN_ADDRESS=
-```
+- Copy the oracle + pool addresses into `backend/.env` (`RISK_ORACLE_ADDRESS`, pool registry JSON).
+- Copy all addresses into `frontend/.env.local` (the `VITE_*` keys listed above) so the Business/Investor dashboards load the deployed contracts.
 
 ## Frontend Deployment
 

@@ -25,8 +25,11 @@ Update `.env.local` with your deployment details:
 VITE_STREAM_MANAGER_ADDRESS=0x...
 VITE_STREAM_VAULT_ADDRESS=0x...
 VITE_MOCK_USDT_ADDRESS=0x...
-# Optional: enable WalletConnect QR flows
-VITE_WALLETCONNECT_PROJECT_ID=your_project_id
+VITE_REVENUE_FACTORY_ADDRESS=0x...
+VITE_RISK_ORACLE_ADDRESS=0x...
+VITE_PRIMARY_YIELD_POOL=0x...
+VITE_BACKEND_API_URL=http://127.0.0.1:4000
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id   # optional
 ```
 
 Then run the dev server:
@@ -48,7 +51,7 @@ The UI exposes every Wagmi connector that is available at runtime:
 Users can choose their provider from the “Connect Wallet” dialog in the navbar or dashboard.
 
 ## Contract Configuration
-The interface needs deployed contract addresses to read/write data. After running the Foundry deployment scripts, append the values from `contracts/deployment.env` to `.env.local`.
+The interface needs deployed contract addresses to read/write data. After running `contracts/deploy.sh`, copy the printed addresses (or the ones you add to `contracts/deployment.env`) into `.env.local` so the Business workspace and Investor cockpit talk to the latest deployments.
 
 If no addresses are configured the dashboard will stay in read-only mode and prompt you to supply the required env variables.
 
