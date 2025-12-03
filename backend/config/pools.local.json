@@ -1,12 +1,12 @@
 [
   {
-    "id": "acme-usdc",
-    "name": "Acme Subscriptions",
-    "symbol": "ACME",
-    "baseToken": "USDC",
-    "revenueToken": "0xRevenueToken",
-    "yieldPool": "0xYieldPool",
-    "business": "0xBusiness",
+    "id": "primary-yield",
+    "name": "StreamYield Primary",
+    "symbol": "sYLD",
+    "baseToken": "0x5dB24867c863dE8262c12627381199556DF2d546",
+    "revenueToken": "0x0000000000000000000000000000000000000000",
+    "yieldPool": "0x9187487Bd77c200d7f1Fa798c797D1a6cC65627D",
+    "business": "0x8f4d2070f0A5ac049760FeDFd09E0CE58d26C116",
     "tenorDays": 90,
     "targetApy": 0.18
   }

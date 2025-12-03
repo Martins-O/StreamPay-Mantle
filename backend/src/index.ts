@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { config } from "./config.ts";
 import { logger } from "./utils/logger.ts";
 import { DataStore } from "./services/dataStore.ts";
@@ -14,10 +15,24 @@ const start = () => {
     const riskService = new RiskService({ store, aiClient, privateKey: config.riskSignerPrivateKey });
 
     const app = express();
+    app.use(
+      cors({
+        origin: config.allowedOrigins,
+        credentials: true
+      })
+    );
     app.use(express.json());
 
     app.get("/health", (_, res) => {
       res.json({ ok: true, time: Date.now() });
+    });
+
+    app.get("/api/config", (_, res) => {
+      res.json({
+        riskOracleAddress: config.riskOracleAddress,
+        aiServiceUrl: config.aiServiceUrl,
+        poolRegistryPath: config.poolRegistryPath
+      });
     });
 
     app.use("/api/business", createBusinessRouter(riskService));

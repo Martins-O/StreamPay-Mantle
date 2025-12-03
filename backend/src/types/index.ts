@@ -25,6 +25,7 @@ export interface RiskRecord {
   bandIndex: number;
   lastUpdated: number;
   signature: string;
+  rationale?: string;
   payload: RiskPayload;
 }
 

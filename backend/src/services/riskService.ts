@@ -15,14 +15,23 @@ interface RiskServiceOpts {
   privateKey: string;
 }
 
+const PRIVATE_KEY_REGEX = /^0x[a-fA-F0-9]{64}$/;
+
 export class RiskService {
   private readonly signer: ethers.Wallet;
 
   constructor(private readonly options: RiskServiceOpts) {
-    if (!options.privateKey) {
+    this.ensurePrivateKey(options.privateKey);
+    this.signer = new ethers.Wallet(options.privateKey);
+  }
+
+  private ensurePrivateKey(key: string) {
+    if (!key) {
       throw new Error("RISK_SIGNER_PRIVATE_KEY is not configured");
     }
-    this.signer = new ethers.Wallet(options.privateKey);
+    if (!PRIVATE_KEY_REGEX.test(key)) {
+      throw new Error("RISK_SIGNER_PRIVATE_KEY must be a 32-byte hex string (0x...) with no ellipses or placeholders");
+    }
   }
 
   getBusinesses() {
@@ -49,6 +58,7 @@ export class RiskService {
       band: aiResponse.band,
       bandIndex: payload.band,
       lastUpdated: payload.timestamp,
+      rationale: aiResponse.rationale,
       signature,
       payload
     };

@@ -22,7 +22,7 @@ describe("RiskService", () => {
     const service = new RiskService({ store, aiClient, privateKey: wallet.privateKey });
 
     const profile: BusinessProfile = {
-      address: "0x123",
+      address: ethers.Wallet.createRandom().address,
       name: "Acme",
       industry: "SaaS",
       monthlyRevenue: 120_000,

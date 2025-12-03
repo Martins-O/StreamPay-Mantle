@@ -9,6 +9,7 @@ export interface AppConfig {
   riskOracleAddress: string;
   poolRegistryPath: string;
   dataPath: string;
+  allowedOrigins: string[];
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,5 +21,9 @@ export const config: AppConfig = {
   riskSignerPrivateKey: process.env.RISK_SIGNER_PRIVATE_KEY ?? "",
   riskOracleAddress: process.env.RISK_ORACLE_ADDRESS ?? "",
   poolRegistryPath: process.env.YIELD_POOL_REGISTRY ?? path.join(rootDir, "config/pools.local.json"),
-  dataPath: path.join(rootDir, "data/store.json")
+  dataPath: path.join(rootDir, "data/store.json"),
+  allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173"
+  ]
 };

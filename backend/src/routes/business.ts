@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import type { RiskService } from "../services/riskService.ts";
 import type { BusinessProfile } from "../types/index.ts";
+import { logger } from "../utils/logger.ts";
 
 const registerSchema = z.object({
   address: z.string().min(1),
@@ -34,6 +35,7 @@ export const createBusinessRouter = (riskService: RiskService) => {
         createdAt: Date.now()
       };
       riskService.upsertBusiness(profile);
+      logger.info({ address: profile.address }, "Business profile registered");
       res.json({ ok: true, profile });
     })
   );
@@ -45,6 +47,7 @@ export const createBusinessRouter = (riskService: RiskService) => {
       if (!risk) {
         return res.status(404).json({ message: "Risk data not found" });
       }
+      logger.debug({ address: req.params.address }, "Fetched risk record");
       res.json(risk);
     })
   );
@@ -52,8 +55,10 @@ export const createBusinessRouter = (riskService: RiskService) => {
   router.post(
     "/:address/risk",
     asyncHandler(async (req, res) => {
+      logger.info({ address: req.params.address, overrides: req.body }, "Refreshing risk score");
       const overrides = riskOverrideSchema.parse(req.body ?? {});
       const result = await riskService.evaluateRisk(req.params.address, overrides);
+      logger.info({ address: req.params.address, band: result.record.band, score: result.record.score }, "Risk score refreshed");
       res.json(result);
     })
   );
@@ -65,6 +70,7 @@ export const createBusinessRouter = (riskService: RiskService) => {
       if (!profile) {
         return res.status(404).json({ message: "Business not registered" });
       }
+      logger.debug({ address: req.params.address }, "Fetched business profile");
       res.json(profile);
     })
   );
