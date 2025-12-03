@@ -1,7 +1,13 @@
+import logging
+import os
+
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="Mantle StreamYield AI Risk Service")
+
+logging.basicConfig(level=os.environ.get("AI_LOG_LEVEL", "INFO"))
+logger = logging.getLogger("ai-service")
 
 
 class ScoreBusinessRequest(BaseModel):
@@ -36,6 +42,14 @@ async def score_business(payload: ScoreBusinessRequest):
     rationale = (
         f"Revenue-adjusted score {score:.1f} based on ${payload.monthlyRevenue:,.0f} monthly revenue,"
         f" volatility {payload.revenueVolatility}% and {payload.missedPayments} missed payments."
+    )
+    logger.info(
+        "score_business: address=%s score=%.2f band=%s volatility=%s missed=%s",
+        payload.address,
+        score,
+        band,
+        payload.revenueVolatility,
+        payload.missedPayments
     )
     return ScoreBusinessResponse(score=int(score), band=band, rationale=rationale)
 
