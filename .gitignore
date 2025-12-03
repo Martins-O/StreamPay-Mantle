@@ -59,6 +59,9 @@ artifacts/
 coverage/
 lcov.info
 
+# Backend runtime data
+backend/data/*.json
+
 # Temporary files
 *.tmp
 *.temp
