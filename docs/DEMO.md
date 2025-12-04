@@ -4,7 +4,7 @@ This guide walks you through a complete demonstration of StreamPay Mantle's real
 
 ## 🎭 Demo Scenario
 
-**Scenario**: Alice wants to stream 1000 mUSDT to Bob over 24 hours for freelance work. Bob can claim his accumulated payment anytime, and Alice can cancel if needed.
+**Scenario**: Alice wants to stream 1,000 Mock USDT (the token deployed at `0x5dB24867c863dE8262c12627381199556DF2d546`) to Bob over 24 hours for freelance work. Bob can claim his accumulated payment anytime, and Alice can cancel if needed.
 
 ## 🚀 Setup for Demo
 
@@ -43,10 +43,7 @@ npm run dev
    - Switch to Mantle testnet if prompted
 
 2. **Get Mock USDT Tokens**
-   ```solidity
-   // Call the mint function on the deployed Mock USDT contract
-   // Example: mockUSDT.mint(alice, 1_000_000e6);
-   ```
+   - Use the Mint button exposed in the Legacy Console (under Token Tools) or call `mint(alice, amount)` directly on Mock USDT at `0x5dB24867c863dE8262c12627381199556DF2d546`.
 
 3. **Approve Token Spending**
    ```bash
@@ -138,7 +135,7 @@ setInterval(() => {
 1. **Sender Pauses**
    - Alice clicks "Pause Stream" from the dashboard
    - Outstanding claimable funds are automatically delivered to Bob
-   - Both parties receive push/WalletConnect notifications (when configured)
+   - Status badges flip to "Paused" across the dashboards (Push/WalletConnect notifications are planned but not enabled in this build)
 
 2. **Sender Resumes**
    - Alice clicks "Resume Stream" to continue accrual

@@ -41,19 +41,41 @@ Pure mathematical library for:
 ### 2. Frontend Application
 
 #### Technology Stack
-- **Vite + React 18**: SPA toolchain for fast builds and HMR
-- **TypeScript**: Type-safe development
-- **Wagmi v2**: Web3 React hooks and wallet integration
-- **Viem**: Ethereum interaction library
-- **TailwindCSS**: Utility-first styling
-- **Recharts**: Data visualization
-- **Push Protocol & WalletConnect Notify**: Optional on-chain/off-chain notifications
+- **Vite + React 18 + TypeScript** for a fast SPA experience
+- **Wagmi v2 + Viem** to read/write the StreamEngine, Vault, Risk Oracle, YieldPool, and RevenueTokenFactory
+- **TailwindCSS + shadcn/ui** for composable UI primitives
+- **Framer Motion / Recharts** for real-time counters and analytics cards
+
+#### Workspaces
+- **Dashboard** – quick links to every workflow plus live telemetry cards fed by the backend
+- **Business workspace** – register metadata, refresh AI risk, mint RevenueTokens, and manage existing streams
+- **Investor cockpit** – browse pools from the backend registry, view risk bands/APY/TVL, approve Mock USDT, and deposit into YieldPool
+- **Legacy console** – power-user table hooked directly to StreamEngine for creating/pause/resume/cancel/claim with NFT receipt awareness
 
 #### Architecture Pattern
-- **Client-side rendering** for real-time updates
-- **React hooks** for state management
-- **Custom hooks** for blockchain interactions
-- **Component composition** for reusability
+- CSR with React Router, Suspense, and code-splitting per workspace
+- Custom hooks (`useStreams`, `useCreateStream`, etc.) encapsulate ABI interactions and accounting math
+- React Query caches backend calls (`/api/pools`, `/api/config`, `/api/business/...`) for instant refetches
+- Notification scaffolding is stubbed but disabled until WalletConnect Notify channels are configured
+
+### 3. Backend API
+
+- **Express + TypeScript** service living in `backend/`
+- Loads a lightweight JSON data store for business profiles, AI risk payloads, and pool metrics
+- Exposes REST endpoints:
+  - `/api/business/register` to persist metadata from the frontend form
+  - `/api/business/:address/risk` to fetch cached scores
+  - `/api/business/:address/risk` (POST) to call the AI service, score inputs, sign a `RiskPayload`, and cache the signature
+  - `/api/pools` to surface the configured pools (base token, revenue token, yield pool, target APY) and derived metrics
+  - `/api/pools/:id/metrics` for on-demand refreshes
+- Signs payloads with the `RISK_SIGNER_PRIVATE_KEY` so `RiskOracleAdapter` can validate them on-chain
+
+### 4. AI Risk Service
+
+- `ai-service/` FastAPI microservice with a single `/score-business` endpoint
+- Deterministically scores businesses using revenue, volatility, and missed payment overrides
+- Assigns LOW/MEDIUM/HIGH bands and returns a rationale string that the backend shares with the frontend and signs for the adapter
+- Completely stateless—only the backend persists results
 
 ## Data Flow
 
@@ -85,6 +107,26 @@ Pure mathematical library for:
 4. Stream state updated
 5. Event emitted
 6. Frontend reflects changes
+```
+
+### AI Risk Refresh
+```
+1. Business workspace posts overrides to `/api/business/:address/risk`
+2. Backend loads existing profile + overrides and calls the FastAPI scorer
+3. Score + band returned → backend builds a `RiskPayload`
+4. Payload signed with `RISK_SIGNER_PRIVATE_KEY`
+5. Record cached in the datastore and echoed back to the UI
+6. Optional: sender submits the payload + signature to `RiskOracleAdapter.updateRiskScore`
+```
+
+### Investor Deposit
+```
+1. Investor selects a pool from `/api/pools`
+2. Approves Mock USDT (or configured base token) for the YieldPool
+3. Calls `deposit(amount)` using Wagmi
+4. YieldPool mints YieldBackedToken shares 1:1 with the deposit
+5. StreamEngine streams revenue into `YieldPool.setRevenueSource`
+6. Investors withdraw via `withdraw(shares)` once claims accrue
 ```
 ### Pause & Resume Lifecycle
 - Sender pauses the stream; any outstanding balance is settled immediately.

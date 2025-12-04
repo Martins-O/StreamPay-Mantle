@@ -6,29 +6,27 @@ This file tracks the major product features shipped so far, their health, and th
 
 | Feature | Description | Progress | Notes |
 | --- | --- | --- | --- |
-| Core streaming lifecycle | Create, pause, resume, cancel, and claim streams with on-chain enforcement and vault custody. | 100% | Covers single and multi-token flows; follow-up on auto-refresh after wallet confirms. |
-| Token approval flow | In-app allowance management so senders can approve the StreamManager without leaving the dashboard. | 90% | Works end-to-end; could add unlimited approval toggle and clearer messaging.
-| Vault & yield wiring | Deposits route to StreamVault with optional strategy push for idle capital. | 70% | Strategy configuration manual; no UI to rebalance or surface yield APY yet.
-| Notifications | Push/WalletConnect hooks broadcast key events (create, claim, pause, resume). | 60% | Stubs exist; needs production channel + granular opt-in controls.
-| Analytics dashboard | Live candlestick chart with hourly/daily views of streamed vs projected flow. | 85% | Animates in real time; next up: historical snapshots & CSV scheduling.
-| CSV export | One-click download of current stream inventory as CSV for off-chain accounting. | 100% | Includes status, claimable balance, timing, and token metadata columns.
-| Templates & batch creation | Pre-built templates and spreadsheet-like entry for streaming multiple recipients. | 75% | Lacks per-recipient duration and better error surfacing when parsing rows.
-| NFT receipts & batch claims | Each stream mints a transferable ERC-721 and supports batched claiming across payrolls. | 80% | Core UX shipped; marketplace listing + signature delegation still open.
+| Core streaming + vault custody | StreamEngine + StreamVault handle create/pause/resume/cancel/claim flows with multi-token support and yield strategy hooks. | 100% | All lifecycle paths covered by Foundry tests and surfaced in the legacy console. |
+| Business workspace & AI risk | Wallet onboarding, profile registration, AI score refresh, signed payload display, and RevenueToken mint form. | 90% | Live scoring + backend signing shipped; next step is pushing payloads on-chain automatically from the UI. |
+| RevenueTokenFactory + mint scripts | Businesses can mint tenor-bound ERC-20s via the UI or `MintRevenueToken.s.sol`, feeding pools. | 85% | Factory deployed + helper script; need UI listing of minted tokens and metadata editing. |
+| Investor cockpit & pool registry | Backend JSON registry drives pool cards (risk band, APY, TVL) and Wagmi-powered approvals/deposits. | 85% | Works with real pools; add multi-pool sorting + withdraw flow post-demo. |
+| Legacy console + advanced ops | Power dashboard lists every stream, NFT receipt holder, vault balances, batch creation, and batch claiming. | 80% | UX polished; automate reminders + CSV exports in a follow-up. |
 
 ## Upcoming / Stretch Goals
 
 | Priority | Feature | Outcome | Target |
 | --- | --- | --- | --- |
-| P0 | Stream health monitor | Predict sender balance runways, alert both parties before streams revert. | Hackathon demo (ASAP) |
-| P0 | Stream intent marketplace | Allow recipients to publish stream templates that senders can fund in one click. | Hackathon demo |
-| P1 | Programmable yield splitter | Let senders choose reserve vs strategy ratios per stream, show earned yield to recipients. | Post-demo polish |
-| P1 | Automation triggers | Webhooks/Zapier hooks when claimable crosses thresholds or streams pause. | Post-demo |
-| P2 | Cross-chain streaming router | Showcase cross-domain claim on Mantle + L1 via messaging bridge. | Stretch goal |
-| P2 | Proof-of-flow credentials | Mint attestations for reliable senders/recipients to unlock perks. | Stretch goal |
+| P0 | Notifications & alerts | Wire Push/WalletConnect Notify to broadcast create/claim/pause events and add email/webhook fallbacks. | Immediate polish |
+| P0 | Pool analytics | Surface on-chain streamed volume, utilization caps, and risk history in `/investor`. | Immediate polish |
+| P1 | Automated yield mgmt | UI to adjust reserve ratios + push idle balances to strategies directly from the dashboard. | Post-demo |
+| P1 | Stream health monitor | Predict sender runways and warn both parties before claims fail. | Post-demo |
+| P2 | Stream templates/marketplace | Recipients publish receivable templates, senders fund them in a click. | Stretch |
+| P2 | Cross-chain withdrawals | Research Mantle ↔ L1 bridging for streamed funds. | Stretch |
 
 ## Change Log
 
+- 2025-02-18: Updated tracker to reflect deployed RevenueToken + pool registry + AI backend work.
 - 2025-02-14: Added NFT receipt + batch claim milestone and marked core streaming lifecycle as complete.
-- 2025-11-04: Initial tracker created with current feature snapshot and roadmap candidates.
+- 2025-01-04: Initial tracker created with current feature snapshot and roadmap candidates.
 
 Update this document as features evolve so the team and judges can quickly see progress.

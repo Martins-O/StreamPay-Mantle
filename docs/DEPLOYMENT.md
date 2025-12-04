@@ -180,6 +180,32 @@ YIELD_BACKED_TOKEN_ADDRESS=0x09795b0F38531eeD002a2bC3bff492FA89cc92eB
 
 ## Frontend Deployment
 
+### Mint a RevenueToken (optional but recommended)
+
+After the core contracts are live, run the helper script to mint an initial RevenueToken that can feed your YieldPool metrics:
+
+```bash
+cd contracts
+forge script script/MintRevenueToken.s.sol:MintRevenueTokenScript \
+  --rpc-url $MANTLE_TESTNET_RPC \
+  --broadcast \
+  --private-key $PRIVATE_KEY
+```
+
+Environment variables used by the script:
+
+```
+REVENUE_TOKEN_FACTORY_ADDRESS=0x6f0021c43d7b26A8058EC7880df807B65727A33E
+MOCK_USDT_ADDRESS=0x5dB24867c863dE8262c12627381199556DF2d546
+PAYMENT_TOKEN_ADDRESS=0x5dB24867c863dE8262c12627381199556DF2d546 # Optional override
+REVENUE_TOKEN_NAME="StreamYield Revenue 1"
+REVENUE_TOKEN_SYMBOL="SYREV1"
+REVENUE_TOKEN_EXPECTED=500000000000 # 500k units w/ 6 decimals
+REVENUE_TOKEN_TENOR=$((90 * 24 * 60 * 60))
+```
+
+Record the minted RevenueToken address in `backend/config/pools.local.json` so `/api/pools` and the Investor dashboard can surface it.
+
 ### 1. Install Dependencies
 
 ```bash
