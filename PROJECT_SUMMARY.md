@@ -252,4 +252,4 @@ The project is immediately deployable and ready for real-world usage, providing 
 
 ---
 
-**Built with ❤️ for the Mantle Network ecosystem**
+**Built for the Mantle Network ecosystem**
