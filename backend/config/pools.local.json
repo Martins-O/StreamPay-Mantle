@@ -4,7 +4,7 @@
     "name": "StreamYield Primary",
     "symbol": "sYLD",
     "baseToken": "0x5dB24867c863dE8262c12627381199556DF2d546",
-    "revenueToken": "0x0000000000000000000000000000000000000000",
+    "revenueToken": "0xE60411A07a4Be365BAB5CA7C48315Ccf512BF8c0",
     "yieldPool": "0x9187487Bd77c200d7f1Fa798c797D1a6cC65627D",
     "business": "0x8f4d2070f0A5ac049760FeDFd09E0CE58d26C116",
     "tenorDays": 90,
