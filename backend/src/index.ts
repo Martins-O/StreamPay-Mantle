@@ -1,12 +1,12 @@
 import express from "express";
 import cors from "cors";
-import { config } from "./config.ts";
-import { logger } from "./utils/logger.ts";
-import { DataStore } from "./services/dataStore.ts";
-import { AiClient } from "./clients/aiClient.ts";
-import { RiskService } from "./services/riskService.ts";
-import { createBusinessRouter } from "./routes/business.ts";
-import { createPoolRouter } from "./routes/pools.ts";
+import { config } from "./config.js";
+import { logger } from "./utils/logger.js";
+import { DataStore } from "./services/dataStore.js";
+import { AiClient } from "./clients/aiClient.js";
+import { RiskService } from "./services/riskService.js";
+import { createBusinessRouter } from "./routes/business.js";
+import { createPoolRouter } from "./routes/pools.js";
 
 const start = () => {
   try {

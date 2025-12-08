@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { ethers } from "ethers";
-import { DataStore } from "./dataStore.ts";
-import { AiClient, type ScoreBusinessInput, type ScoreBusinessResponse } from "../clients/aiClient.ts";
-import type { BusinessProfile, RiskBand, RiskPayload, RiskRecord } from "../types/index.ts";
+import { DataStore } from "./dataStore.js";
+import { AiClient, type ScoreBusinessInput, type ScoreBusinessResponse } from "../clients/aiClient.js";
+import type { BusinessProfile, RiskBand, RiskPayload, RiskRecord } from "../types/index.js";
 
 const abiCoder = ethers.AbiCoder.defaultAbiCoder();
 const RISK_TYPEHASH = ethers.keccak256(

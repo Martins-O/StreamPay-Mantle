@@ -1,4 +1,4 @@
-import type { RiskBand } from "../types/index.ts";
+import type { RiskBand } from "../types/index.js";
 
 export interface ScoreBusinessInput {
   address: string;

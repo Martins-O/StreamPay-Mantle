@@ -1,9 +1,12 @@
 import fs from "node:fs";
 import { Router } from "express";
-import type { PoolConfig, PoolMetrics } from "../types/index.ts";
-import type { RiskService } from "../services/riskService.ts";
+import type { NextFunction, Request, Response } from "express";
+import type { PoolConfig, PoolMetrics } from "../types/index.js";
+import type { RiskService } from "../services/riskService.js";
 
-const asyncHandler = (fn: any) => (req: any, res: any, next: any) =>
+type ExpressHandler = (req: Request, res: Response, next: NextFunction) => Promise<unknown> | unknown;
+
+const asyncHandler = (fn: ExpressHandler) => (req: Request, res: Response, next: NextFunction) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
 const loadPools = (filePath: string): PoolConfig[] => {

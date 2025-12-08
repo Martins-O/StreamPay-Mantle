@@ -1,8 +1,9 @@
 import { Router } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { z } from "zod";
-import type { RiskService } from "../services/riskService.ts";
-import type { BusinessProfile } from "../types/index.ts";
-import { logger } from "../utils/logger.ts";
+import type { RiskService } from "../services/riskService.js";
+import type { BusinessProfile } from "../types/index.js";
+import { logger } from "../utils/logger.js";
 
 const registerSchema = z.object({
   address: z.string().min(1),
@@ -19,7 +20,9 @@ const riskOverrideSchema = z.object({
   missedPayments: z.number().min(0).optional()
 });
 
-const asyncHandler = (fn: any) => (req: any, res: any, next: any) =>
+type ExpressHandler = (req: Request, res: Response, next: NextFunction) => Promise<unknown> | unknown;
+
+const asyncHandler = (fn: ExpressHandler) => (req: Request, res: Response, next: NextFunction) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
 export const createBusinessRouter = (riskService: RiskService) => {

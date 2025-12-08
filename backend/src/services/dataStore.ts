@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { BusinessProfile, PoolMetrics, RiskRecord } from "../types/index.ts";
+import type { BusinessProfile, PoolMetrics, RiskRecord } from "../types/index.js";
 
 interface DatabaseState {
   businesses: Record<string, BusinessProfile>;
