@@ -117,7 +117,7 @@ Vite SPA
 
 ### Mantle L2 Testnet
 - **Network ID**: 5003
-- **RPC**: https://mantle-sepolia.drpc.org
+- **RPC**: https://rpc.sepolia.mantle.xyz (fallback https://mantle-sepolia.drpc.org)
 - **Explorer**: https://explorer.testnet.mantle.xyz
 - **Faucet**: https://faucet.testnet.mantle.xyz
 

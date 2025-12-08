@@ -46,7 +46,7 @@ RISK_SIGNER_ADDRESS=
 MANTLESCAN_API_KEY=your_mantlescan_api_key
 
 # RPC URLs
-MANTLE_TESTNET_RPC=https://mantle-sepolia.drpc.org
+MANTLE_TESTNET_RPC=https://rpc.sepolia.mantle.xyz
 MANTLE_MAINNET_RPC=https://rpc.mantle.xyz
 
 # Optional overrides
@@ -74,8 +74,8 @@ VITE_REVENUE_FACTORY_ADDRESS=0x6f0021c43d7b26A8058EC7880df807B65727A33E
 VITE_RISK_ORACLE_ADDRESS=0x49387C2bbF79348e80809eb534542E70ff139fEA
 VITE_PRIMARY_YIELD_POOL=0x9187487Bd77c200d7f1Fa798c797D1a6cC65627D
 
-# RPC URL (override if you run your own node)
-VITE_MANTLE_RPC_URL=https://mantle-sepolia.drpc.org
+# RPC URLs (comma-separated to enable fallbacks)
+VITE_MANTLE_RPC_URL=https://rpc.sepolia.mantle.xyz,https://mantle-sepolia.drpc.org
 
 # Optional WalletConnect Project ID
 VITE_WALLETCONNECT_PROJECT_ID=
@@ -87,6 +87,8 @@ VITE_PUSH_ENV=staging
 VITE_WALLETCONNECT_NOTIFY_PROJECT_ID=
 VITE_WALLETCONNECT_NOTIFY_SECRET=
 ```
+
+> Separate multiple Mantle RPC URLs with commas to let the dApp fall back automatically when a provider is down.
 
 > The frontend always streams the token set in `VITE_STREAM_TOKEN_ADDRESS`. Leaving it empty will fall back to
 > `VITE_MOCK_USDT_ADDRESS`.
@@ -382,7 +384,10 @@ echo $VITE_STREAM_MANAGER_ADDRESS
 {
   "chainId": 5003,
   "chainName": "Mantle Sepolia Testnet",
-  "rpcUrls": ["https://mantle-sepolia.drpc.org"],
+  "rpcUrls": [
+    "https://rpc.sepolia.mantle.xyz",
+    "https://mantle-sepolia.drpc.org"
+  ],
   "nativeCurrency": {
     "name": "Mantle",
     "symbol": "MNT",

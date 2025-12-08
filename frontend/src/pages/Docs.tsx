@@ -71,6 +71,10 @@ const Docs = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">RPC URL:</span>
+                        <span>https://rpc.sepolia.mantle.xyz</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Fallback RPC:</span>
                         <span>https://mantle-sepolia.drpc.org</span>
                       </div>
                       <div className="flex justify-between">

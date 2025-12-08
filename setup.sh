@@ -111,7 +111,7 @@ PRIVATE_KEY=$PRIVATE_KEY
 MANTLESCAN_API_KEY=$MANTLESCAN_API_KEY
 
 # RPC URLs
-MANTLE_TESTNET_RPC=https://mantle-sepolia.drpc.org
+MANTLE_TESTNET_RPC=https://rpc.sepolia.mantle.xyz
 MANTLE_MAINNET_RPC=https://rpc.mantle.xyz
 
 # Contract Addresses (filled after deployment)
@@ -212,8 +212,8 @@ VITE_STREAM_VAULT_ADDRESS=
 VITE_MOCK_USDT_ADDRESS=
 VITE_STREAM_TOKEN_ADDRESS=
 
-# Mantle RPC URL (override if you host your own node)
-VITE_MANTLE_RPC_URL=https://mantle-sepolia.drpc.org
+# Mantle RPC URLs (comma-separated to enable fallbacks)
+VITE_MANTLE_RPC_URL=https://rpc.sepolia.mantle.xyz,https://mantle-sepolia.drpc.org
 EOF
 
     # Copy contract addresses if they exist
