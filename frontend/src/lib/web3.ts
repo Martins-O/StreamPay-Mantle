@@ -1,9 +1,28 @@
-import { createConfig, http } from 'wagmi';
+import { createConfig } from 'wagmi';
 import { mantle } from 'wagmi/chains';
 import { injected, walletConnect } from 'wagmi/connectors';
-import { defineChain } from 'viem';
+import { defineChain, fallback, http } from 'viem';
 
-const defaultMantleRpc = (import.meta.env.VITE_MANTLE_RPC_URL as string | undefined) || 'https://mantle-sepolia.drpc.org';
+const DEFAULT_MANTLE_RPCS = [
+  'https://rpc.sepolia.mantle.xyz',
+  'https://mantle-sepolia.drpc.org',
+] as const;
+
+const envMantleRpc = import.meta.env.VITE_MANTLE_RPC_URL as string | undefined;
+const mantleRpcUrls = (envMantleRpc ? envMantleRpc.split(',') : DEFAULT_MANTLE_RPCS)
+  .map((url) => url.trim())
+  .filter((url) => url.length > 0);
+
+const resolvedMantleRpcUrls = mantleRpcUrls.length ? mantleRpcUrls : [...DEFAULT_MANTLE_RPCS];
+
+const mantleTransport = fallback(
+  resolvedMantleRpcUrls.map((url) =>
+    http(url, {
+      retryCount: 2,
+      retryDelay: 500,
+    })
+  )
+);
 
 export const mantleSepolia = defineChain({
   id: 5003,
@@ -11,8 +30,8 @@ export const mantleSepolia = defineChain({
   network: 'mantle-sepolia',
   nativeCurrency: { name: 'Mantle', symbol: 'MNT', decimals: 18 },
   rpcUrls: {
-    default: { http: [defaultMantleRpc] },
-    public: { http: [defaultMantleRpc] },
+    default: { http: resolvedMantleRpcUrls },
+    public: { http: resolvedMantleRpcUrls },
   },
   blockExplorers: {
     default: {
@@ -51,7 +70,7 @@ export const config = createConfig({
   chains: [mantleSepolia, mantle],
   connectors,
   transports: {
-    [mantleSepolia.id]: http(mantleSepolia.rpcUrls.default.http[0]),
+    [mantleSepolia.id]: mantleTransport,
     [mantle.id]: http(),
   },
 });
