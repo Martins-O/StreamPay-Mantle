@@ -15,7 +15,7 @@ const RISK_TYPES = {
     { name: "expiry", type: "uint256" },
     { name: "nonce", type: "bytes32" }
   ]
-} as const;
+};
 
 interface RiskServiceOpts {
   store: DataStore;
@@ -86,6 +86,7 @@ export class RiskService {
       bandIndex: payload.band,
       lastUpdated: payload.timestamp,
       rationale: aiResponse.rationale,
+      verified: aiResponse.verified,
       signature,
       payload
     };

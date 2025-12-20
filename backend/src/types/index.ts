@@ -26,6 +26,7 @@ export interface RiskRecord {
   lastUpdated: number;
   signature: string;
   rationale?: string;
+  verified?: boolean;
   payload: RiskPayload;
 }
 

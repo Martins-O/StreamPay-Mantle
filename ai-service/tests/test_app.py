@@ -36,3 +36,32 @@ def test_score_business_high_band():
     assert response.status_code == 200
     data = response.json()
     assert data["band"] == "HIGH"
+
+
+def test_verify_revenue_endpoint():
+    payload = {
+        "address": "0xabc",
+        "monthlyRevenue": 100_000,
+        "revenueVolatility": 10,
+    }
+    response = client.post("/verify-revenue", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["verifiedRevenue"] > 0
+    assert "Stripe" in data["provider"]
+
+
+def test_score_business_verified_boost():
+    payload = {
+        "address": "0xabc",
+        "monthlyRevenue": 80_000,
+        "revenueVolatility": 10,
+        "missedPayments": 0,
+        "useVerifiedData": True
+    }
+    response = client.post("/score-business", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["verified"] is True
+    # The score should be higher with the +5 boost
+    assert data["score"] > 0

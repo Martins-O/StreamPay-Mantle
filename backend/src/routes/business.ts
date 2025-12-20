@@ -17,7 +17,8 @@ const registerSchema = z.object({
 const riskOverrideSchema = z.object({
   monthlyRevenue: z.number().positive().optional(),
   revenueVolatility: z.number().min(0).max(100).optional(),
-  missedPayments: z.number().min(0).optional()
+  missedPayments: z.number().min(0).optional(),
+  useVerifiedData: z.boolean().optional()
 });
 
 type ExpressHandler = (req: Request, res: Response, next: NextFunction) => Promise<unknown> | unknown;
@@ -61,7 +62,7 @@ export const createBusinessRouter = (riskService: RiskService) => {
       logger.info({ address: req.params.address, overrides: req.body }, "Refreshing risk score");
       const overrides = riskOverrideSchema.parse(req.body ?? {});
       const result = await riskService.evaluateRisk(req.params.address, overrides);
-      logger.info({ address: req.params.address, band: result.record.band, score: result.record.score }, "Risk score refreshed");
+      logger.info({ address: req.params.address, band: result.record.band, score: result.record.score, verified: result.record.verified }, "Risk score refreshed");
       res.json(result);
     })
   );

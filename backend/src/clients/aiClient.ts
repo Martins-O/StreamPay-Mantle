@@ -5,16 +5,18 @@ export interface ScoreBusinessInput {
   monthlyRevenue: number;
   revenueVolatility: number;
   missedPayments: number;
+  useVerifiedData?: boolean;
 }
 
 export interface ScoreBusinessResponse {
   score: number;
   band: RiskBand;
   rationale?: string;
+  verified: boolean;
 }
 
 export class AiClient {
-  constructor(private readonly baseUrl: string) {}
+  constructor(private readonly baseUrl: string) { }
 
   async scoreBusiness(input: ScoreBusinessInput): Promise<ScoreBusinessResponse> {
     const response = await fetch(`${this.baseUrl}/score-business`, {

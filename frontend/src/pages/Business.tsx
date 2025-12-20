@@ -17,6 +17,8 @@ import type { BusinessRegistrationPayload, RiskResponse, BackendConfigResponse }
 import { parseUnits, formatUnits } from 'viem';
 import { REVENUE_FACTORY_ABI, REVENUE_FACTORY_ADDRESS, ZERO_ADDRESS } from '@/lib/streamYield';
 import { MOCK_USDT_ADDRESS } from '@/lib/contract';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ShieldCheck } from 'lucide-react';
 
 const defaultProfile: Omit<BusinessRegistrationPayload, 'address'> = {
   name: '',
@@ -91,6 +93,7 @@ const Business = () => {
   const [tokenForm, setTokenForm] = useState(defaultTokenForm);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingRisk, setLoadingRisk] = useState(false);
+  const [useVerifiedData, setUseVerifiedData] = useState(false);
   const [backendConfig, setBackendConfig] = useState<BackendConfigResponse | null>(null);
   const { writeContractAsync, isPending: isWriting } = useWriteContract();
   const disabledInputClass = !isConnected ? 'opacity-60 cursor-not-allowed' : '';
@@ -175,7 +178,8 @@ const Business = () => {
     try {
       const { record } = await refreshRisk(address, {
         monthlyRevenue: profileForm.monthlyRevenue,
-        revenueVolatility: profileForm.revenueVolatility
+        revenueVolatility: profileForm.revenueVolatility,
+        useVerifiedData
       });
       setRisk(record);
       toast.success('Risk oracle refreshed. Share the update with investors.');
@@ -261,18 +265,37 @@ const Business = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">AI risk band</p>
-                <p className="text-4xl font-semibold">
+                <p className="text-4xl font-semibold flex items-center gap-2">
                   {risk ? risk.band : loadingRisk ? 'Refreshing…' : 'Not scored'}
+                  {risk?.verified && (
+                    <ShieldCheck className="h-8 w-8 text-primary" />
+                  )}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {risk?.lastUpdated
-                    ? `Last update ${new Date(risk.lastUpdated * 1000).toLocaleString()}`
+                    ? `${risk.verified ? 'Verified' : 'Self-reported'} update ${new Date(risk.lastUpdated * 1000).toLocaleString()}`
                     : 'Request a score to publish telemetry'}
                 </p>
               </div>
-              <Button onClick={handleRefreshRisk} disabled={!isConnected || loadingRisk}>
-                {loadingRisk ? 'Updating…' : 'Refresh score'}
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button onClick={handleRefreshRisk} disabled={!isConnected || loadingRisk}>
+                  {loadingRisk ? 'Updating…' : 'Refresh score'}
+                </Button>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="verify-revenue"
+                    checked={useVerifiedData}
+                    onCheckedChange={(checked) => setUseVerifiedData(checked as boolean)}
+                    disabled={!isConnected || loadingRisk}
+                  />
+                  <label
+                    htmlFor="verify-revenue"
+                    className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Verify via Stripe (Mock)
+                  </label>
+                </div>
+              </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-border/60 p-4">
@@ -571,19 +594,19 @@ const Business = () => {
                         <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Receiver</p>
                         <p className="font-mono text-sm">{streamRecipient}</p>
                       </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Token</p>
-                      <p className="text-sm">{stream.tokens[0]?.tokenSymbol ?? '—'}</p>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Token</p>
+                        <p className="text-sm">{stream.tokens[0]?.tokenSymbol ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Flow rate</p>
+                        <p className="text-sm font-semibold">
+                          {stream.tokens
+                            .map((token) => `${formatUnits(token.flowRate, token.tokenDecimals)} ${token.tokenSymbol}`)
+                            .join(', ')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Flow rate</p>
-                      <p className="text-sm font-semibold">
-                        {stream.tokens
-                          .map((token) => `${formatUnits(token.flowRate, token.tokenDecimals)} ${token.tokenSymbol}`)
-                          .join(', ')}
-                      </p>
-                    </div>
-                  </div>
                   </Card>
                 );
               })}
@@ -596,7 +619,7 @@ const Business = () => {
         </section>
       </main>
       <Footer />
-    </div>
+    </div >
   );
 };
 

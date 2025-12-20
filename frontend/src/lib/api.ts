@@ -16,6 +16,7 @@ export interface RiskResponse {
   lastUpdated: number;
   signature?: string;
   rationale?: string;
+  verified?: boolean;
 }
 
 export interface PoolResponse {
@@ -72,7 +73,7 @@ export const fetchBusinessProfile = (address: string) =>
 
 export const fetchRisk = (address: string) => request<RiskResponse>(`/api/business/${address}/risk`);
 
-export const refreshRisk = (address: string, overrides: Partial<{ monthlyRevenue: number; revenueVolatility: number; missedPayments: number }>) =>
+export const refreshRisk = (address: string, overrides: Partial<{ monthlyRevenue: number; revenueVolatility: number; missedPayments: number; useVerifiedData: boolean }>) =>
   request<{ record: RiskResponse }>(`/api/business/${address}/risk`, {
     method: 'POST',
     body: JSON.stringify(overrides ?? {}),
