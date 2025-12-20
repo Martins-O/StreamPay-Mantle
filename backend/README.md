@@ -30,6 +30,7 @@ npm test
 | `AI_SERVICE_URL` | FastAPI risk microservice base URL (defaults to `http://127.0.0.1:8001`). |
 | `RISK_SIGNER_PRIVATE_KEY` | Hex private key used to sign payloads for `RiskOracleAdapter`. |
 | `RISK_ORACLE_ADDRESS` | On-chain adapter address printed by `contracts/deploy.sh`. |
+| `RISK_ORACLE_CHAIN_ID` | Chain ID used for the deployed adapter (e.g., Mantle Sepolia = `5003`). |
 | `YIELD_POOL_REGISTRY` | Path to the JSON file describing demo pools exposed via `/api/pools` (update the addresses after every deployment). |
 | `ALLOWED_ORIGINS` | Comma-separated list of frontend origins for CORS. |
 

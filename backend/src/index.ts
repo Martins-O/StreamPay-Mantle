@@ -12,7 +12,13 @@ const start = () => {
   try {
     const store = new DataStore(config.dataPath);
     const aiClient = new AiClient(config.aiServiceUrl);
-    const riskService = new RiskService({ store, aiClient, privateKey: config.riskSignerPrivateKey });
+    const riskService = new RiskService({
+      store,
+      aiClient,
+      privateKey: config.riskSignerPrivateKey,
+      verifyingContract: config.riskOracleAddress,
+      chainId: config.riskOracleChainId
+    });
 
     const app = express();
     app.use(

@@ -4,25 +4,43 @@ import { DataStore } from "./dataStore.js";
 import { AiClient, type ScoreBusinessInput, type ScoreBusinessResponse } from "../clients/aiClient.js";
 import type { BusinessProfile, RiskBand, RiskPayload, RiskRecord } from "../types/index.js";
 
-const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-const RISK_TYPEHASH = ethers.keccak256(
-  ethers.toUtf8Bytes("RiskPayload(address subject,uint8 score,uint8 band,uint256 timestamp,uint256 expiry,bytes32 nonce)")
-);
+const DOMAIN_NAME = "StreamYieldRisk";
+const DOMAIN_VERSION = "1";
+const RISK_TYPES = {
+  RiskPayload: [
+    { name: "subject", type: "address" },
+    { name: "score", type: "uint8" },
+    { name: "band", type: "uint8" },
+    { name: "timestamp", type: "uint256" },
+    { name: "expiry", type: "uint256" },
+    { name: "nonce", type: "bytes32" }
+  ]
+} as const;
 
 interface RiskServiceOpts {
   store: DataStore;
   aiClient: AiClient;
   privateKey: string;
+  verifyingContract: string;
+  chainId: number;
 }
 
 const PRIVATE_KEY_REGEX = /^0x[a-fA-F0-9]{64}$/;
 
 export class RiskService {
   private readonly signer: ethers.Wallet;
+  private readonly domain: ethers.TypedDataDomain;
 
   constructor(private readonly options: RiskServiceOpts) {
     this.ensurePrivateKey(options.privateKey);
+    this.ensureOracleConfig(options.verifyingContract, options.chainId);
     this.signer = new ethers.Wallet(options.privateKey);
+    this.domain = {
+      name: DOMAIN_NAME,
+      version: DOMAIN_VERSION,
+      verifyingContract: ethers.getAddress(options.verifyingContract),
+      chainId: options.chainId
+    } satisfies ethers.TypedDataDomain;
   }
 
   private ensurePrivateKey(key: string) {
@@ -31,6 +49,15 @@ export class RiskService {
     }
     if (!PRIVATE_KEY_REGEX.test(key)) {
       throw new Error("RISK_SIGNER_PRIVATE_KEY must be a 32-byte hex string (0x...) with no ellipses or placeholders");
+    }
+  }
+
+  private ensureOracleConfig(address: string, chainId: number) {
+    if (!ethers.isAddress(address)) {
+      throw new Error("RISK_ORACLE_ADDRESS must be a valid address");
+    }
+    if (!chainId || Number.isNaN(chainId)) {
+      throw new Error("RISK_ORACLE_CHAIN_ID must be provided");
     }
   }
 
@@ -94,20 +121,7 @@ export class RiskService {
   }
 
   private async signPayload(payload: RiskPayload) {
-    const encoded = abiCoder.encode(
-      ["bytes32", "address", "uint8", "uint8", "uint256", "uint256", "bytes32"],
-      [
-        RISK_TYPEHASH,
-        payload.subject,
-        payload.score,
-        payload.band,
-        payload.timestamp,
-        payload.expiry,
-        payload.nonce
-      ]
-    );
-    const digest = ethers.keccak256(encoded);
-    return this.signer.signMessage(ethers.getBytes(digest));
+    return this.signer.signTypedData(this.domain, RISK_TYPES, payload as Record<string, any>);
   }
 
   private bandToIndex(band: RiskBand) {

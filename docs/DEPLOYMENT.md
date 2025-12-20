@@ -177,7 +177,7 @@ YIELD_POOL_ADDRESS=0x9187487Bd77c200d7f1Fa798c797D1a6cC65627D
 YIELD_BACKED_TOKEN_ADDRESS=0x09795b0F38531eeD002a2bC3bff492FA89cc92eB
 ```
 
-- Copy the oracle + pool addresses into `backend/.env` (`RISK_ORACLE_ADDRESS`, pool registry JSON).
+- Copy the oracle + pool addresses into `backend/.env` (`RISK_ORACLE_ADDRESS`, `RISK_ORACLE_CHAIN_ID`, pool registry JSON).
 - Copy all addresses into `frontend/.env.local` (the `VITE_*` keys listed above) so the Business/Investor dashboards load the deployed contracts.
 
 ## Frontend Deployment

@@ -54,10 +54,23 @@ contract YieldPool is Ownable, ReentrancyGuard {
     function deposit(uint256 amount) external nonReentrant {
         require(amount > 0, "Invalid amount");
         require(amount <= availableCapacity(), "Capacity reached");
+
+        uint256 supply = ybt.totalSupply();
+        uint256 assetsBefore = totalAssets();
+        uint256 shares;
+
+        if (supply == 0 || assetsBefore == 0) {
+            shares = amount;
+        } else {
+            shares = (amount * supply) / assetsBefore;
+        }
+
+        require(shares > 0, "Zero shares");
+
         baseToken.safeTransferFrom(msg.sender, address(this), amount);
-        ybt.mint(msg.sender, amount);
+        ybt.mint(msg.sender, shares);
         totalPrincipal += amount;
-        emit Deposited(msg.sender, amount, amount);
+        emit Deposited(msg.sender, amount, shares);
     }
 
     function withdraw(uint256 shares) external nonReentrant {

@@ -7,6 +7,7 @@ export interface AppConfig {
   aiServiceUrl: string;
   riskSignerPrivateKey: string;
   riskOracleAddress: string;
+  riskOracleChainId: number;
   poolRegistryPath: string;
   dataPath: string;
   allowedOrigins: string[];
@@ -20,6 +21,7 @@ export const config: AppConfig = {
   aiServiceUrl: process.env.AI_SERVICE_URL ?? "http://127.0.0.1:8001",
   riskSignerPrivateKey: process.env.RISK_SIGNER_PRIVATE_KEY ?? "",
   riskOracleAddress: process.env.RISK_ORACLE_ADDRESS ?? "",
+  riskOracleChainId: Number(process.env.RISK_ORACLE_CHAIN_ID ?? 5003),
   poolRegistryPath: process.env.YIELD_POOL_REGISTRY ?? path.join(rootDir, "config/pools.local.json"),
   dataPath: path.join(rootDir, "data/store.json"),
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? [

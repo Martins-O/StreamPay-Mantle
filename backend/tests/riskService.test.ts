@@ -19,7 +19,13 @@ describe("RiskService", () => {
     const store = new DataStore(storePath);
     const aiClient = new FakeAiClient();
     const wallet = ethers.Wallet.createRandom();
-    const service = new RiskService({ store, aiClient, privateKey: wallet.privateKey });
+    const service = new RiskService({
+      store,
+      aiClient,
+      privateKey: wallet.privateKey,
+      verifyingContract: ethers.Wallet.createRandom().address,
+      chainId: 5003
+    });
 
     const profile: BusinessProfile = {
       address: ethers.Wallet.createRandom().address,

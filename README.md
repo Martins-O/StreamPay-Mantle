@@ -53,7 +53,7 @@ graph TD
 ### 0. Environment checklist
 
 1. `cp contracts/.env.example contracts/.env` and fill `PRIVATE_KEY`, RPC URLs, and (optionally) `RISK_SIGNER_ADDRESS`. When omitted, the deployer address becomes the signer used by the backend + oracle.
-2. `cp backend/.env.example backend/.env` and set `AI_SERVICE_URL`, `RISK_SIGNER_PRIVATE_KEY`, and `RISK_ORACLE_ADDRESS` (after deployment).
+2. `cp backend/.env.example backend/.env` and set `AI_SERVICE_URL`, `RISK_SIGNER_PRIVATE_KEY`, `RISK_ORACLE_ADDRESS`, and `RISK_ORACLE_CHAIN_ID` (matches the network used during deployment).
 3. `cp frontend/.env.example frontend/.env.local` and paste the deployed contract addresses once the Foundry script runs.
 4. `cd ai-service && ./setup.sh` to create the virtualenv and install FastAPI deps.
 
@@ -72,7 +72,7 @@ forge test              # runs StreamYield integration tests
 ```bash
 cd backend
 cp .env.example .env
-# edit PORT, AI_SERVICE_URL, RISK_SIGNER_PRIVATE_KEY, RISK_ORACLE_ADDRESS, etc.
+# edit PORT, AI_SERVICE_URL, RISK_SIGNER_PRIVATE_KEY, RISK_ORACLE_ADDRESS, RISK_ORACLE_CHAIN_ID, etc.
 npm install
 npm run dev             # Express server on http://localhost:4000
 # npm test              # Vitest suite covering risk signing helpers

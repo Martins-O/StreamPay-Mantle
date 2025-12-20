@@ -6,8 +6,8 @@ import {MockERC20} from "../src/MockERC20.sol";
 import {RevenueTokenFactory} from "../src/RevenueTokenFactory.sol";
 import {RevenueToken} from "../src/RevenueToken.sol";
 import {YieldPool} from "../src/YieldPool.sol";
+import {YieldBackedToken} from "../src/YieldBackedToken.sol";
 import {RiskOracleAdapter} from "../src/RiskOracleAdapter.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract StreamYieldIntegrationTest is Test {
     uint256 private constant SIGNER_PK = 0xA11CE;
@@ -19,6 +19,7 @@ contract StreamYieldIntegrationTest is Test {
 
     address public business = address(0xBEEF);
     address public investor = address(0xCAFE);
+    address public investorTwo = address(0xD00D);
     address public riskSigner;
 
     function setUp() public {
@@ -28,6 +29,7 @@ contract StreamYieldIntegrationTest is Test {
         riskOracle = new RiskOracleAdapter(riskSigner);
 
         usdc.mint(investor, 2_000_000 * 1e6);
+        usdc.mint(investorTwo, 2_000_000 * 1e6);
         usdc.mint(business, 500_000 * 1e6);
     }
 
@@ -64,6 +66,45 @@ contract StreamYieldIntegrationTest is Test {
         assertGt(investorBalanceAfter - investorBalanceBefore, depositAmount / 2);
     }
 
+    function testSecondaryDepositsMintPremiumShares() public {
+        RevenueToken revenueToken = _deployRevenueToken(1_000_000 * 1e6);
+
+        pool = new YieldPool(address(usdc), address(riskOracle), "StreamYield USDC", "syUSDC");
+        pool.configureRevenueToken(address(revenueToken));
+        vm.prank(business);
+        revenueToken.setYieldPool(address(pool));
+        pool.setRevenueSource(business);
+
+        _pushRiskScore(address(revenueToken), 90, 0);
+
+        uint256 firstDeposit = 100_000 * 1e6;
+        vm.startPrank(investor);
+        usdc.approve(address(pool), firstDeposit);
+        pool.deposit(firstDeposit);
+        vm.stopPrank();
+
+        uint256 revenue = 25_000 * 1e6;
+        vm.startPrank(business);
+        usdc.transfer(address(pool), revenue);
+        pool.onRevenueReceived(revenue);
+        vm.stopPrank();
+
+        YieldBackedToken ybt = pool.ybt();
+        uint256 supplyBefore = ybt.totalSupply();
+        uint256 assetsBefore = pool.totalAssets();
+        uint256 secondDeposit = 50_000 * 1e6;
+
+        vm.startPrank(investorTwo);
+        usdc.approve(address(pool), secondDeposit);
+        pool.deposit(secondDeposit);
+        vm.stopPrank();
+
+        uint256 mintedShares = ybt.balanceOf(investorTwo);
+        uint256 expectedShares = (secondDeposit * supplyBefore) / assetsBefore;
+        assertEq(mintedShares, expectedShares);
+        assertLt(mintedShares, secondDeposit);
+    }
+
     function testDepositRevertsWhenCapacityExceeded() public {
         RevenueToken revenueToken = _deployRevenueToken(50_000 * 1e6);
         YieldPool tightPool = new YieldPool(address(usdc), address(riskOracle), "Tight", "tightYBT");
@@ -95,7 +136,7 @@ contract StreamYieldIntegrationTest is Test {
             nonce: keccak256("nonce")
         });
 
-        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(riskOracle.hashPayload(payload));
+        bytes32 digest = riskOracle.hashTypedData(payload);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(0xBEEF, digest);
         bytes memory signature = abi.encodePacked(r, s, v);
         vm.expectRevert("Invalid signer");
@@ -128,7 +169,7 @@ contract StreamYieldIntegrationTest is Test {
             nonce: keccak256(abi.encodePacked(subject, score, block.timestamp))
         });
 
-        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(riskOracle.hashPayload(payload));
+        bytes32 digest = riskOracle.hashTypedData(payload);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PK, digest);
         bytes memory signature = abi.encodePacked(r, s, v);
         riskOracle.updateRiskScore(payload, signature);

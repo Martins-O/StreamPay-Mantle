@@ -24,7 +24,13 @@ contract RiskOracleAdapter is Ownable {
     bytes32 public constant RISK_TYPEHASH =
         keccak256("RiskPayload(address subject,uint8 score,uint8 band,uint256 timestamp,uint256 expiry,bytes32 nonce)");
 
+    bytes32 public constant EIP712_DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 public constant NAME_HASH = keccak256("StreamYieldRisk");
+    bytes32 public constant VERSION_HASH = keccak256("1");
+
     address public riskSigner;
+    bytes32 public immutable DOMAIN_SEPARATOR;
     mapping(address => RiskData) private _riskData;
     mapping(bytes32 => bool) public consumedNonces;
 
@@ -34,6 +40,9 @@ contract RiskOracleAdapter is Ownable {
     constructor(address signer) Ownable(msg.sender) {
         require(signer != address(0), "Signer required");
         riskSigner = signer;
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(EIP712_DOMAIN_TYPEHASH, NAME_HASH, VERSION_HASH, block.chainid, address(this))
+        );
         emit RiskSignerUpdated(signer);
     }
 
@@ -65,7 +74,7 @@ contract RiskOracleAdapter is Ownable {
         }
         require(!consumedNonces[payload.nonce], "Nonce used");
 
-        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(hashPayload(payload));
+        bytes32 digest = hashTypedData(payload);
         address recovered = ECDSA.recover(digest, signature);
         require(recovered == riskSigner, "Invalid signer");
 
@@ -80,5 +89,9 @@ contract RiskOracleAdapter is Ownable {
         if (data.lastUpdated == 0) {
             data.band = 2; // default to highest risk band if unknown
         }
+    }
+
+    function hashTypedData(RiskPayload memory payload) public view returns (bytes32) {
+        return MessageHashUtils.toTypedDataHash(DOMAIN_SEPARATOR, hashPayload(payload));
     }
 }
