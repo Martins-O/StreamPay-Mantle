@@ -20,46 +20,57 @@ const HowItWorks = () => {
   const steps = [
     {
       number: '01',
-      icon: Wallet,
-      title: 'Connect Your Wallet',
-      description: 'Connect your MetaMask or WalletConnect-compatible wallet to the Mantle testnet network.',
+      icon: Shield,
+      title: 'Business Submits Revenue Data',
+      description: 'Businesses submit metadata about their revenue streams - invoices, subscriptions, or rent rolls.',
       details: [
-        'Supports MetaMask, WalletConnect, and more',
-        'One-click connection process',
-        'Secure and non-custodial',
+        'Upload business profile and revenue documentation',
+        'Connect accounting systems or provide manual data',
+        'Specify funding needs and repayment terms',
       ],
     },
     {
       number: '02',
-      icon: Coins,
-      title: 'Select Tokens & Amounts',
-      description: 'Choose one or many ERC-20 tokens to stream and specify how much should unlock over time.',
+      icon: Zap,
+      title: 'AI Risk Oracle Scores',
+      description: 'The FastAPI risk service analyzes the business and generates a signed AI risk score with rationale.',
       details: [
-        'Multi-token support in a single stream',
-        'Real-time balance and allowance checking',
-        'Token approval handled automatically',
+        'Deterministic scoring based on revenue stability',
+        'EIP-712 signed payload for on-chain verification',
+        'Real-time updates as business metrics change',
       ],
     },
     {
       number: '03',
-      icon: Clock,
-      title: 'Set Stream Duration',
-      description: 'Define how long the payment stream should last - from seconds to months.',
+      icon: Coins,
+      title: 'Mint RevenueToken',
+      description: 'Business creates ERC-20 RevenueTokens backed by their future cashflows.',
       details: [
-        'Flexible duration settings',
-        'Calculate rate per second',
-        'Preview stream details before creation',
+        'Tokens represent claims on future revenue',
+        'Minted through RevenueTokenFactory contract',
+        'Automatically configured with StreamEngine',
       ],
     },
     {
       number: '04',
-      icon: Play,
-      title: 'Start Streaming',
-      description: 'Confirm the transaction and mint an NFT receipt that streams value in real-time to the recipient.',
+      icon: Wallet,
+      title: 'Investors Provide Liquidity',
+      description: 'Investors review the AI risk score and deposit stablecoins into the YieldPool to receive YieldBackedTokens (YBT).',
       details: [
-        'Low gas fees on Mantle L2',
-        'Instant stream activation with NFT ownership proof',
-        'Recipients can transfer or batch claim with the NFT',
+        'Deposit USDC or MNT into the YieldPool',
+        'Receive YBT shares proportional to deposit',
+        'Earn yield as revenue streams in',
+      ],
+    },
+    {
+      number: '05',
+      icon: Droplets,
+      title: 'Revenue Streams & Yields',
+      description: 'Business revenue flows into the YieldPool in real-time, distributing proportional yield to all YBT holders.',
+      details: [
+        'Second-by-second streaming of revenue',
+        'Automatic yield distribution to investors',
+        'Transparent on-chain accounting',
       ],
     },
   ];
@@ -67,85 +78,93 @@ const HowItWorks = () => {
   const features = [
     {
       icon: Zap,
-      title: 'Real-Time Streaming',
-      description: 'Tokens are transferred continuously per second, not in batches. Recipients can see their balance increasing in real-time.',
+      title: 'AI-Powered Risk Scoring',
+      description: 'FastAPI service generates deterministic risk scores with transparent rationale, signed via EIP-712 for trustless on-chain verification.',
       color: 'text-cyan-500',
     },
     {
       icon: Shield,
-      title: 'Secure & Trustless',
-      description: 'Smart contracts handle all transactions automatically. No intermediaries, no trust required. Your funds are secured by blockchain technology.',
+      title: 'Secure & Transparent',
+      description: 'All transactions and risk scores are verified on-chain. Smart contracts manage funds with zero intermediaries or custodial risk.',
       color: 'text-purple-500',
     },
     {
       icon: CheckCircle2,
-      title: 'Flexible Control',
-      description: 'Senders can top up, extend, or cancel streams anytime. Recipients claim accrued tokens on demand or transfer their NFT receipt.',
+      title: 'Instant Liquidity',
+      description: 'Businesses get immediate capital against future revenue without waiting 30-90 days for invoice payments or subscription renewals.',
       color: 'text-green-500',
     },
     {
       icon: Droplets,
-      title: 'Transferable NFT Receipts',
-      description: 'Every stream mints an ERC-721 receipt that proves ownership. Hand it off to another wallet or marketplace to reroute future cashflow instantly.',
+      title: 'Real-Time Yield',
+      description: 'Investors earn yield every second as revenue streams into the YieldPool. No monthly distributions - fully automated and continuous.',
       color: 'text-amber-500',
     },
     {
       icon: Coins,
-      title: 'Batch Payroll Claims',
-      description: 'Recipients aggregate multiple NFT streams and claim them in one transaction—perfect for payroll and treasury ops.',
+      title: 'Composable DeFi Primitives',
+      description: 'RevenueTokens, YieldBackedTokens, and StreamEngine are modular building blocks that integrate with any DeFi protocol on Mantle.',
       color: 'text-rose-500',
     },
   ];
 
   const useCases = [
     {
-      title: 'Payroll & Salaries',
-      description: 'Stream salaries to employees every second instead of monthly payments. Employees get paid continuously for their work.',
-      icon: '💼',
-    },
-    {
-      title: 'Subscriptions',
-      description: 'Pay for services per second of usage. No more upfront monthly fees. Cancel anytime and only pay for what you use.',
-      icon: '📱',
-    },
-    {
-      title: 'Freelance Payments',
-      description: 'Stream payments to freelancers based on project milestones or time worked. Automatic and transparent.',
+      title: 'SaaS ARR Financing',
+      description: 'Turn annual recurring revenue into immediate working capital. Investors fund your MRR, you pay back as customers renew.',
       icon: '💻',
     },
     {
-      title: 'Vesting & Grants',
-      description: 'Create token vesting schedules for investors or team members with continuous unlocking over time.',
-      icon: '🎁',
+      title: 'Invoice Factoring',
+      description: 'Convert B2B invoices with 30-90 day payment terms into instant liquidity. No more waiting for slow-paying customers.',
+      icon: '📄',
     },
     {
-      title: 'Rent & Leases',
-      description: 'Stream rent payments per second to landlords. No more monthly rent due dates or late fees.',
+      title: 'Real Estate Cashflow',
+      description: 'Tokenize rent rolls and stream payments to liquidity providers. Get upfront capital against future lease income.',
       icon: '🏠',
     },
     {
-      title: 'DeFi Loans',
-      description: 'Continuous interest payments on loans. Interest streams from borrower to lender every second.',
-      icon: '🏦',
+      title: 'Trade Finance',
+      description: 'Embed Liquifi into supply chain platforms. Suppliers get paid instantly while logistics partners earn yield on receivables.',
+      icon: '📦',
+    },
+    {
+      title: 'Creator Economy',
+      description: 'Monetize future sponsorships, memberships, and content revenue. Creators get upfront funding, backers earn from success.',
+      icon: '🎨',
+    },
+    {
+      title: 'Revenue-Based Loans',
+      description: 'Non-dilutive growth capital tied to actual revenue performance. Repay automatically as your business scales.',
+      icon: '📈',
     },
   ];
 
   const technicalFlow = [
     {
-      step: 'Token Approval',
-      description: 'User approves StreamManager contract to spend tokens',
+      step: 'Business Registration',
+      description: 'Business submits profile to backend, which calls FastAPI AI service for initial risk assessment',
     },
     {
-      step: 'Create Stream',
-      description: 'StreamManager locks tokens in StreamVault and mints an ERC-721 receipt to the recipient',
+      step: 'AI Risk Scoring',
+      description: 'FastAPI service generates deterministic score + rationale, backend signer creates EIP-712 signature',
     },
     {
-      step: 'Real-Time Calculation',
-      description: 'Accounting keeps per-token balances in sync every second, including pauses and top-ups',
+      step: 'RevenueToken Mint',
+      description: 'Business calls RevenueTokenFactory with signed risk payload, mints ERC-20 tokens backed by future revenue',
     },
     {
-      step: 'Claim, Transfer, or Adjust',
-      description: 'NFT holder batches claims or transfers ownership while the sender can extend, top up, or cancel',
+      step: 'YieldPool Deposit',
+      description: 'Investors approve and deposit USDC/MNT into YieldPool, receive YieldBackedTokens (YBT) as shares',
+    },
+    {
+      step: 'Revenue Streaming',
+      description: 'Business revenue flows via StreamEngine to YieldPool, distributing yield proportionally to all YBT holders',
+    },
+    {
+      step: 'Risk Updates',
+      description: 'RiskOracleAdapter validates updated AI scores on-chain, adjusting pool exposure and share values',
     },
   ];
 
@@ -176,7 +195,7 @@ const HowItWorks = () => {
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Discover how multi-token, NFT-backed payment streaming lets teams top up, transfer, and batch claim value without waiting for payroll cycles.
+              Transform future revenue into instant capital with AI-powered risk management, yield streaming, and transparent on-chain verification.
             </p>
           </motion.div>
         </div>
@@ -326,7 +345,7 @@ const HowItWorks = () => {
               Under the <span className="gradient-text">Hood</span>
             </h2>
             <p className="text-lg text-muted-foreground">
-              The technical flow of a Liquifi payment stream.
+              The technical architecture of Liquifi's revenue financing protocol.
             </p>
           </motion.div>
 
@@ -364,12 +383,12 @@ const HowItWorks = () => {
           >
             <Card className="glass-card p-8">
               <p className="text-muted-foreground mb-6">
-                All calculations happen on-chain with second-precision accuracy. No oracles, no off-chain dependencies.
+                AI risk scores are cryptographically signed off-chain and verified on-chain via EIP-712. Revenue streaming and yield distribution happen with second-level precision.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span>Trustless</span>
+                  <span>AI-Powered</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-cyan-500" />
@@ -377,7 +396,7 @@ const HowItWorks = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-purple-500" />
-                  <span>Decentralized</span>
+                  <span>Composable</span>
                 </div>
               </div>
             </Card>
@@ -396,19 +415,21 @@ const HowItWorks = () => {
           >
             <Card className="glass-card p-12 text-center space-y-6 glow-purple">
               <h2 className="text-3xl md:text-4xl font-bold">
-                Ready to Start Streaming?
+                Ready to Transform Your Revenue?
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Connect your wallet and experience the future of continuous payments on Mantle.
+                Connect your wallet to access the Liquifi dashboard. Businesses get instant liquidity, investors earn real yield.
               </p>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="inline-block"
               >
-                <div className="text-lg px-8 py-4 rounded-full animated-gradient text-background font-semibold cursor-pointer">
-                  Get Started <ArrowRight className="inline-block ml-2 h-5 w-5" />
-                </div>
+                <a href="/dashboard">
+                  <div className="text-lg px-8 py-4 rounded-full animated-gradient text-background font-semibold cursor-pointer">
+                    Launch Dashboard <ArrowRight className="inline-block ml-2 h-5 w-5" />
+                  </div>
+                </a>
               </motion.div>
             </Card>
           </motion.div>
