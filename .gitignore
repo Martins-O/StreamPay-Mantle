@@ -64,3 +64,6 @@ backend/data/*.json
 # Temporary files
 *.tmp
 *.temp
+
+./docs
+

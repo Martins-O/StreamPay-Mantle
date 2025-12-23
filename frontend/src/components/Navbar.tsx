@@ -33,31 +33,24 @@ const LogoMark = () => (
     focusable="false"
   >
     <defs>
-      <linearGradient id="streampayLogoGradient" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#22d3ee" />
-        <stop offset="45%" stopColor="#818cf8" />
-        <stop offset="100%" stopColor="#a855f7" />
-      </linearGradient>
-      <linearGradient id="streampayLogoWave" x1="10" y1="18" x2="38" y2="32" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#f8fafc" />
-        <stop offset="100%" stopColor="#cbd5f5" />
+      <linearGradient id="liquifiLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#0A1628" />
+        <stop offset="50%" stopColor="#06B6D4" />
+        <stop offset="100%" stopColor="#22D3EE" />
       </linearGradient>
     </defs>
-    <rect x="6" y="6" width="36" height="36" rx="18" fill="url(#streampayLogoGradient)" />
+    {/* Droplet shape */}
     <path
-      d="M12 27.5C16.5 24 19.5 24 24 27.5C28.5 31 31.5 31 36 27.5"
-      stroke="url(#streampayLogoWave)"
-      strokeWidth="4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M24 6 C24 6, 15 18, 15 27 C15 33.627, 18.686 39, 24 39 C29.314 39, 33 33.627, 33 27 C33 18, 24 6, 24 6 Z"
+      fill="url(#liquifiLogoGradient)"
+      opacity="0.9"
     />
-    <path
-      d="M16 22C18.5 19.5 20.5 18.5 24 18.5C27.5 18.5 29.5 19.5 32 22"
-      stroke="rgba(248, 250, 252, 0.6)"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    {/* Coin circle overlay */}
+    <circle cx="24" cy="27" r="9" fill="none" stroke="#F59E0B" strokeWidth="1.5" opacity="0.8"/>
+    {/* Flowing particles */}
+    <circle cx="21" cy="24" r="1.5" fill="#67E8F9" opacity="0.6"/>
+    <circle cx="27" cy="25.5" r="1.2" fill="#67E8F9" opacity="0.5"/>
+    <circle cx="24" cy="28.5" r="1.4" fill="#67E8F9" opacity="0.7"/>
   </svg>
 );
 
@@ -152,8 +145,8 @@ const Navbar = () => {
               <LogoMark />
             </span>
             <div className="flex flex-col leading-tight">
-              <span className="text-lg font-semibold tracking-tight text-foreground">Mantle StreamYield</span>
-              <span className="text-xs uppercase tracking-[0.35em] text-muted-foreground group-hover:text-primary transition-colors">RealFi + AI streaming</span>
+              <span className="text-lg font-semibold tracking-tight text-foreground">Liquifi</span>
+              <span className="text-xs uppercase tracking-[0.35em] text-muted-foreground group-hover:text-primary transition-colors">Instant liquidity</span>
             </div>
           </Link>
 
@@ -353,7 +346,7 @@ const Navbar = () => {
                 <DialogHeader>
                   <DialogTitle>Connect a Wallet</DialogTitle>
                   <DialogDescription>
-                    Choose a wallet provider to connect to StreamPay.
+                    Choose a wallet provider to connect to Liquifi.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3">

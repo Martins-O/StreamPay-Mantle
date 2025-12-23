@@ -22,15 +22,15 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Brand Section */}
           <div className="space-y-4">
-            <motion.div 
+            <motion.div
               className="flex items-center gap-2"
               whileHover={{ scale: 1.05 }}
             >
               <Droplets className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold gradient-text">StreamPay</span>
+              <span className="text-xl font-bold gradient-text">Liquifi</span>
             </motion.div>
             <p className="text-sm text-muted-foreground">
-              Real-time crypto payment streaming on the Mantle Sepolia Testnet. Stream tokens by the second.
+              Instant liquidity for future revenue. AI-powered streaming finance on Mantle L2.
             </p>
           </div>
 
@@ -115,7 +115,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} StreamPay Mantle. Powered by the Mantle ecosystem.
+            © {currentYear} Liquifi Protocol. Built on Mantle L2.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">
