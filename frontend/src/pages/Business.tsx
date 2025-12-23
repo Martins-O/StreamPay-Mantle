@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { StreamNFTCard } from '@/components/StreamNFTCard';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -585,26 +586,39 @@ const Business = () => {
                 const streamRecipient = (stream as any).receiver ?? (stream as any).recipient ?? '—';
                 return (
                   <Card key={streamId} className="p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Stream ID</p>
-                        <p className="font-mono text-sm">{streamId}</p>
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="flex-shrink-0">
+                        <StreamNFTCard streamId={BigInt(streamId)} />
                       </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Receiver</p>
-                        <p className="font-mono text-sm">{streamRecipient}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Token</p>
-                        <p className="text-sm">{stream.tokens[0]?.tokenSymbol ?? '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Flow rate</p>
-                        <p className="text-sm font-semibold">
-                          {stream.tokens
-                            .map((token) => `${formatUnits(token.flowRate, token.tokenDecimals)} ${token.tokenSymbol}`)
-                            .join(', ')}
-                        </p>
+                      <div className="flex-grow flex flex-col justify-center">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Stream ID</p>
+                            <p className="font-mono text-sm">{streamId}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Receiver</p>
+                            <p className="font-mono text-sm truncate max-w-[120px]" title={streamRecipient}>{streamRecipient}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Token</p>
+                            <p className="text-sm">{stream.tokens[0]?.tokenSymbol ?? '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Flow rate</p>
+                            <p className="text-sm font-semibold">
+                              {stream.tokens
+                                .map((token) => `${formatUnits(token.flowRate || 0n, token.tokenDecimals || 18)} ${token.tokenSymbol}`)
+                                .join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${stream.isActive ? (stream.isPaused ? 'bg-yellow-500' : 'bg-green-500') : 'bg-red-500'}`} />
+                          <span className="text-[10px] uppercase tracking-widest font-bold">
+                            {stream.isActive ? (stream.isPaused ? 'Paused' : 'Active') : 'Inactive'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Card>

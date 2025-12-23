@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
 import {StreamManager} from "../src/StreamManager.sol";
+import {StreamDescriptor} from "../src/StreamDescriptor.sol";
 import {MockERC20} from "../src/MockERC20.sol";
 import {MockYieldStrategy} from "./mocks/MockYieldStrategy.sol";
 
@@ -370,5 +371,23 @@ contract StreamManagerTest is Test {
     function _wrapAmount(uint256 amount) internal pure returns (uint256[] memory arr) {
         arr = new uint256[](1);
         arr[0] = amount;
+    }
+
+    function testTokenURIGeneration() public {
+        StreamDescriptor descriptor = new StreamDescriptor();
+        streamManager.setDescriptor(address(descriptor));
+
+        vm.prank(sender);
+        uint256 streamId = streamManager.createStream(recipient, address(tokenA), 1_000 * 1e6, 100);
+
+        string memory uri = streamManager.tokenURI(streamId);
+        assertEq(bytes(uri).length > 64, true); // Should be a substantial data URI
+        
+        // Check for base64 JSON header
+        bytes memory uriPrefix = new bytes(29);
+        for(uint i=0; i<29; i++){
+            uriPrefix[i] = bytes(uri)[i];
+        }
+        assertEq(string(uriPrefix), "data:application/json;base64,");
     }
 }

@@ -9,6 +9,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {StreamVault} from "./StreamVault.sol";
 import {AccountingLib} from "./AccountingLib.sol";
+import {StreamDescriptor} from "./StreamDescriptor.sol";
 
 contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
     using SafeERC20 for IERC20;
@@ -51,6 +52,7 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
     }
 
     StreamVault public immutable VAULT;
+    StreamDescriptor public descriptor;
     uint256 public streamCounter;
 
     mapping(uint256 => Stream) public streams;
@@ -481,6 +483,18 @@ contract StreamManager is ERC721, ReentrancyGuard, Pausable, Ownable {
 
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    function setDescriptor(address _descriptor) external onlyOwner {
+        descriptor = StreamDescriptor(_descriptor);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireOwned(tokenId);
+        if (address(descriptor) == address(0)) {
+            return super.tokenURI(tokenId);
+        }
+        return descriptor.tokenURI(this, tokenId);
     }
 
     function _createStream(
