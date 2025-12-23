@@ -1,0 +1,69 @@
+services:
+  # Backend API Service
+  - type: web
+    name: streampay-backend
+    env: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: AI_SERVICE_URL
+        sync: false
+      - key: RISK_SIGNER_PRIVATE_KEY
+        sync: false
+      - key: RISK_ORACLE_ADDRESS
+        sync: false
+      - key: RISK_ORACLE_CHAIN_ID
+        value: 5003
+      - key: ALLOWED_ORIGINS
+        value: "*"
+    healthCheckPath: /health
+
+  # Frontend (Static Site)
+  - type: web
+    name: streampay-frontend
+    env: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_STREAM_MANAGER_ADDRESS
+        value: "0x60bd590bc841D8558B279F064459a91Afd0d6015"
+      - key: VITE_STREAM_VAULT_ADDRESS
+        value: "0x3B4AB8Bd7D5Bc7D92447bE88D95c0844E1296792"
+      - key: VITE_MOCK_USDT_ADDRESS
+        value: "0x5dB24867c863dE8262c12627381199556DF2d546"
+      - key: VITE_STREAM_TOKEN_ADDRESS
+        value: "0x5dB24867c863dE8262c12627381199556DF2d546"
+      - key: VITE_REVENUE_FACTORY_ADDRESS
+        value: "0x6f0021c43d7b26A8058EC7880df807B65727A33E"
+      - key: VITE_RISK_ORACLE_ADDRESS
+        value: "0x49387C2bbF79348e80809eb534542E70ff139fEA"
+      - key: VITE_PRIMARY_YIELD_POOL
+        value: "0x9187487Bd77c200d7f1Fa798c797D1a6cC65627D"
+      - key: VITE_MANTLE_RPC_URL
+        value: "https://mantle-sepolia.drpc.org"
+      - key: VITE_BACKEND_API_URL
+        fromService:
+          type: web
+          name: streampay-backend
+          property: host
