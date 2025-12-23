@@ -34,7 +34,7 @@ const Docs = () => {
             <Book className="h-16 w-16 text-primary mx-auto" />
             <h1 className="text-4xl font-bold gradient-text">Documentation</h1>
             <p className="text-xl text-muted-foreground">
-              Everything you need to know about StreamPay Mantle
+              Everything you need to know about Liquifi
             </p>
           </motion.div>
 
@@ -57,7 +57,7 @@ const Docs = () => {
                   <div>
                     <h3 className="font-semibold text-lg mb-2">1. Connect Your Wallet</h3>
                     <p className="text-muted-foreground">
-                      Click "Connect Wallet" in the top right corner. StreamPay supports MetaMask and Mantle Wallet.
+                      Click "Connect Wallet" in the top right corner. Liquifi supports MetaMask and Mantle Wallet.
                     </p>
                   </div>
 

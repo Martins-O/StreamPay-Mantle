@@ -150,7 +150,7 @@ const About = () => {
   ];
 
   const team = {
-    description: 'StreamPay is built by a passionate team of blockchain developers, designers, and innovators who believe in the power of continuous payments to transform the digital economy.',
+    description: 'Liquifi is built by a passionate team of blockchain developers, designers, and innovators who believe in the power of continuous payments to transform the digital economy.',
     values: [
       'We\'re committed to open source principles',
       'Every line of code is peer-reviewed',
@@ -174,7 +174,7 @@ const About = () => {
             className="text-center space-y-6"
           >
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-              About <span className="gradient-text">StreamPay Mantle</span>
+              About <span className="gradient-text">Liquifi</span>
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">

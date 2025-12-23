@@ -47,7 +47,7 @@ export const TARGET_CHAIN_NAME = mantleSepolia.name;
 
 const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined;
 const appMetadata = {
-  name: 'StreamPay Mantle',
+  name: 'Liquifi',
   description: 'Real-time payment streaming on Mantle L2',
   url: typeof window !== 'undefined' ? window.location.origin : 'https://streampay.example',
   icons: ['https://avatars.githubusercontent.com/u/37784886?s=200&v=4'],

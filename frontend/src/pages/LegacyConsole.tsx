@@ -382,7 +382,7 @@ const Dashboard = () => {
               <h2 className="text-2xl font-bold">Connect Your Wallet</h2>
 
               <p className="text-muted-foreground">
-                Please connect your wallet to access the StreamPay dashboard and manage your payment streams.
+                Please connect your wallet to access the Liquifi dashboard and manage your payment streams.
               </p>
 
               <div className="space-y-2">
@@ -542,7 +542,7 @@ const Dashboard = () => {
                   <div>
                     <p className="text-sm font-semibold text-foreground">Wrong Network</p>
                     <p className="text-xs text-muted-foreground">
-                      Switch your wallet to {TARGET_CHAIN_NAME} (chain ID {TARGET_CHAIN_ID}) to interact with StreamPay.
+                      Switch your wallet to {TARGET_CHAIN_NAME} (chain ID {TARGET_CHAIN_ID}) to interact with Liquifi.
                     </p>
                   </div>
                   <Button

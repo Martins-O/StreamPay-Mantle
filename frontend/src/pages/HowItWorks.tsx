@@ -172,7 +172,7 @@ const HowItWorks = () => {
             </motion.div>
 
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-              How <span className="gradient-text">StreamPay</span> Works
+              How <span className="gradient-text">Liquifi</span> Works
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -244,7 +244,7 @@ const HowItWorks = () => {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              Why Choose <span className="gradient-text">StreamPay</span>
+              Why Choose <span className="gradient-text">Liquifi</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               Built on cutting-edge technology to provide the best streaming payment experience.
@@ -287,7 +287,7 @@ const HowItWorks = () => {
               Real-World <span className="gradient-text">Use Cases</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              StreamPay transforms how payments work across industries.
+              Liquifi transforms how payments work across industries.
             </p>
           </motion.div>
 
@@ -326,7 +326,7 @@ const HowItWorks = () => {
               Under the <span className="gradient-text">Hood</span>
             </h2>
             <p className="text-lg text-muted-foreground">
-              The technical flow of a StreamPay payment stream.
+              The technical flow of a Liquifi payment stream.
             </p>
           </motion.div>
 

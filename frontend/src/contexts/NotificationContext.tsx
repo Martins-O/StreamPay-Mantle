@@ -153,7 +153,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     async ({ type, stream, actor, recipients, count }: StreamEventPayload) => {
       const targetRecipients = recipients ?? [stream.recipient];
 
-      let title = 'StreamPay Update';
+      let title = 'Liquifi Update';
       let body = '';
 
       switch (type) {

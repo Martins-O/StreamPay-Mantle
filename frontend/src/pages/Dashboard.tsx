@@ -52,10 +52,10 @@ const Dashboard = () => {
           <div className="space-y-6">
             <Badge variant="outline" className="uppercase tracking-[0.35em]">Unified dashboard</Badge>
             <h1 className="text-4xl sm:text-5xl font-semibold leading-tight">
-              Operate Mantle StreamYield from one place
+              Operate Liquifi from one place
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl">
-              Move between off-chain underwriting, pool operations, and investor outreach without context switching. StreamYield
+              Move between off-chain underwriting, pool operations, and investor outreach without context switching. Liquifi
               keeps the AI service, backend signer, and frontend UIs in sync so your team focuses on growth instead of glue code.
             </p>
             <div className="flex flex-wrap gap-3">

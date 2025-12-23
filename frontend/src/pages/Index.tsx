@@ -21,7 +21,7 @@ import { Card } from '@/components/ui/card';
 const heroCopy = {
   heading: 'Tokenize revenue. Stream AI-scored yield on Mantle.',
   subheading:
-    'Mantle StreamYield turns invoices, rent, or subscription ARR into live on-chain cashflow. RevenueTokens fund a shared YieldPool while the AI Risk Oracle signs updated exposure in real time.',
+    'Liquifi transforms future revenue into instant capital with AI-powered risk management. Businesses tokenize cashflows, investors provide liquidity, everyone earns from real revenue streams.',
   ctas: [
     { label: 'I’m a Business', to: '/business', icon: Rocket, variant: 'primary' as const },
     { label: 'I’m an Investor', to: '/investor', icon: ArrowRight, variant: 'secondary' as const },
@@ -96,7 +96,7 @@ const useCases = [
   },
   {
     title: 'Invoice / trade finance',
-    description: 'Embed StreamYield into logistics partners so receivables fund a shared Mantle pool with live risk scores.',
+    description: 'Embed Liquifi into logistics partners so receivables fund a shared Mantle pool with live risk scores.',
   },
   {
     title: 'Real estate cashflow',
@@ -208,7 +208,7 @@ const Index = () => (
                   <Rocket className="h-10 w-10 text-primary" />
                   <div>
                     <p className="text-sm uppercase tracking-wide text-muted-foreground">Live analytics snapshot</p>
-                    <p className="text-2xl font-semibold">StreamYield Ops Console</p>
+                    <p className="text-2xl font-semibold">Liquifi Ops Console</p>
                   </div>
                 </div>
                 <div className="mt-8 space-y-6">
@@ -266,7 +266,7 @@ const Index = () => (
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
               <h2 className="text-3xl font-bold md:text-4xl">The old way slows teams down.</h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                Payment drips stitched together with spreadsheets, cron jobs, and manual claims equal risk and wasted time. Mantle StreamYield removes the friction.
+                Payment drips stitched together with spreadsheets, cron jobs, and manual claims equal risk and wasted time. Liquifi removes the friction.
               </p>
               <div className="mt-8 space-y-5">
                 {problemPoints.map(point => (
@@ -284,7 +284,7 @@ const Index = () => (
             </motion.div>
 
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.1 }} viewport={{ once: true }}>
-              <h2 className="text-3xl font-bold md:text-4xl">StreamYield handles the heavy lifting.</h2>
+              <h2 className="text-3xl font-bold md:text-4xl">Liquifi handles the heavy lifting.</h2>
               <p className="mt-4 text-lg text-muted-foreground">
                 A modular stack of RevenueTokenFactory, StreamEngine, YieldPool, and the RiskOracleAdapter makes RealFi primitives composable on Mantle.
               </p>
@@ -341,7 +341,7 @@ const Index = () => (
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }} className="text-center">
             <h2 className="text-3xl font-bold md:text-4xl">Built for the builders who move fast.</h2>
             <p className="mt-4 text-muted-foreground md:text-lg">
-              From SaaS finance desks to proptech operators, Mantle StreamYield packages underwriting, tokenization, and streaming in one battle-tested repo.
+              From SaaS finance desks to proptech operators, Liquifi packages underwriting, tokenization, and streaming in one battle-tested repo.
             </p>
           </motion.div>
           <div className="mt-12 grid gap-8 md:grid-cols-3">
@@ -365,7 +365,7 @@ const Index = () => (
             <Card className="glass-card overflow-hidden rounded-3xl border border-primary/30 bg-primary/10 p-10 text-center shadow-[0_20px_120px_rgba(56,189,248,0.25)]">
               <h2 className="text-3xl font-bold md:text-4xl">Ready to make every second count?</h2>
               <p className="mt-4 text-muted-foreground md:text-lg">
-                Launch Mantle StreamYield, mint a RevenueToken, and invite investors to deposit into your AI-rated YieldPool.
+                Launch Liquifi, mint a RevenueToken, and invite investors to deposit into your AI-rated YieldPool.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
