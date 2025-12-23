@@ -7,6 +7,7 @@ import {StreamEngine} from "../src/StreamEngine.sol";
 import {RevenueTokenFactory} from "../src/RevenueTokenFactory.sol";
 import {RiskOracleAdapter} from "../src/RiskOracleAdapter.sol";
 import {YieldPool} from "../src/YieldPool.sol";
+import {StreamDescriptor} from "../src/StreamDescriptor.sol";
 
 contract DeployScript is Script {
     function run() external {
@@ -32,6 +33,9 @@ contract DeployScript is Script {
         YieldPool yieldPool = new YieldPool(baseTokenAddress, address(riskOracle), poolName, poolSymbol);
         yieldPool.setRevenueSource(address(streamEngine));
 
+        StreamDescriptor descriptor = new StreamDescriptor();
+        streamEngine.setDescriptor(address(descriptor));
+
         vm.stopBroadcast();
 
         address vaultAddress = address(streamEngine.VAULT());
@@ -44,6 +48,7 @@ contract DeployScript is Script {
         console.log("RiskOracleAdapter deployed to:", address(riskOracle));
         console.log("YieldPool deployed to:", address(yieldPool));
         console.log("YieldBackedToken deployed to:", ybtAddress);
+        console.log("StreamDescriptor deployed to:", address(descriptor));
 
         console.log("\nCopy the addresses above into deployment.env and your frontend/backend env files.");
     }
