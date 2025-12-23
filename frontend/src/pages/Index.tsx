@@ -23,8 +23,8 @@ const heroCopy = {
   subheading:
     'Liquifi transforms future revenue into instant capital with AI-powered risk management. Businesses tokenize cashflows, investors provide liquidity, everyone earns from real revenue streams.',
   ctas: [
-    { label: 'I’m a Business', to: '/business', icon: Rocket, variant: 'primary' as const },
-    { label: 'I’m an Investor', to: '/investor', icon: ArrowRight, variant: 'secondary' as const },
+    { label: 'Launch App', to: '/dashboard', icon: Rocket, variant: 'primary' as const },
+    { label: 'Learn How It Works', to: '/how-it-works', icon: ArrowRight, variant: 'secondary' as const },
   ],
 };
 
@@ -155,107 +155,46 @@ const Index = () => (
     <main className="relative z-10">
       {/* Hero */}
       <section className="relative pt-28 pb-24 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-primary">
-                <Sparkle className="h-3 w-3" />
-                RealFi + AI on Mantle
-              </div>
-              <h1 className="mt-6 text-4xl font-bold leading-tight md:text-6xl">
-                {heroCopy.heading}
-              </h1>
-              <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-                {heroCopy.subheading}
-              </p>
-              <div className="mt-10 flex flex-wrap gap-4">
-                {heroCopy.ctas.map(cta => (
-                  <motion.div key={cta.label} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                    <Link to={cta.to}>
-                      <div
-                        className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all ${
-                          cta.variant === 'primary'
-                            ? 'animated-gradient text-background shadow-lg shadow-primary/25'
-                            : 'border border-primary/50 text-primary hover:bg-primary/10'
-                        }`}
-                      >
-                        <cta.icon className="h-4 w-4" />
-                        {cta.label}
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="mt-12 grid gap-4 sm:grid-cols-2">
-                {metrics.map(metric => (
-                  <Card key={metric.label} className="glass-card p-5">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{metric.label}</p>
-                    <p className="mt-2 text-2xl font-semibold gradient-text">{metric.value}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{metric.caption}</p>
-                  </Card>
-                ))}
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.9 }}
-              className="relative"
-            >
-              <div className="relative rounded-3xl border border-primary/20 bg-background/60 p-8 backdrop-blur-xl shadow-2xl shadow-primary/20">
-                <div className="flex items-center gap-3">
-                  <Rocket className="h-10 w-10 text-primary" />
-                  <div>
-                    <p className="text-sm uppercase tracking-wide text-muted-foreground">Live analytics snapshot</p>
-                    <p className="text-2xl font-semibold">Liquifi Ops Console</p>
-                  </div>
-                </div>
-                <div className="mt-8 space-y-6">
-                  <div className="rounded-2xl bg-primary/10 p-5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Active stream</span>
-                      <span className="font-semibold text-primary">#21 · Growth Grant</span>
+        <div className="container mx-auto max-w-4xl text-center">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-primary">
+              <Sparkle className="h-3 w-3" />
+              RealFi + AI on Mantle
+            </div>
+            <h1 className="mt-6 text-4xl font-bold leading-tight md:text-6xl">
+              {heroCopy.heading}
+            </h1>
+            <p className="mt-6 text-lg text-muted-foreground md:text-xl mx-auto max-w-3xl">
+              {heroCopy.subheading}
+            </p>
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              {heroCopy.ctas.map(cta => (
+                <motion.div key={cta.label} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <Link to={cta.to}>
+                    <div
+                      className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all ${
+                        cta.variant === 'primary'
+                          ? 'animated-gradient text-background shadow-lg shadow-primary/25'
+                          : 'border border-primary/50 text-primary hover:bg-primary/10'
+                      }`}
+                    >
+                      <cta.icon className="h-4 w-4" />
+                      {cta.label}
                     </div>
-                    <div className="mt-4 flex items-end justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Claimable right now</p>
-                        <p className="text-3xl font-bold">248.12 USDT</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        accrues every second
-                      </div>
-                    </div>
-                    <div className="mt-5 h-2 rounded-full bg-primary/15">
-                      <motion.div
-                        className="h-full rounded-full bg-primary"
-                        initial={{ width: '0%' }}
-                        animate={{ width: '68%' }}
-                        transition={{ duration: 1.8, ease: 'easeInOut' }}
-                      />
-                    </div>
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Next health check in 3h · sender balance runway 12 days
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Card className="glass-card p-4">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Paused reserves</p>
-                      <p className="mt-2 text-lg font-semibold">12 streams</p>
-                      <p className="text-xs text-muted-foreground">Reactivate instantly with a single click.</p>
-                    </Card>
-                    <Card className="glass-card p-4">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Yield amplified</p>
-                      <p className="mt-2 text-lg font-semibold">4.2% APY</p>
-                      <p className="text-xs text-muted-foreground">Vault capital routed to Mantle strategies.</p>
-                    </Card>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+            <div className="mt-16 grid gap-4 sm:grid-cols-2 md:grid-cols-4 max-w-5xl mx-auto">
+              {metrics.map(metric => (
+                <Card key={metric.label} className="glass-card p-5">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{metric.label}</p>
+                  <p className="mt-2 text-2xl font-semibold gradient-text">{metric.value}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{metric.caption}</p>
+                </Card>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -365,14 +304,14 @@ const Index = () => (
             <Card className="glass-card overflow-hidden rounded-3xl border border-primary/30 bg-primary/10 p-10 text-center shadow-[0_20px_120px_rgba(56,189,248,0.25)]">
               <h2 className="text-3xl font-bold md:text-4xl">Ready to make every second count?</h2>
               <p className="mt-4 text-muted-foreground md:text-lg">
-                Launch Liquifi, mint a RevenueToken, and invite investors to deposit into your AI-rated YieldPool.
+                Connect your wallet to access the dashboard and start tokenizing revenue or providing liquidity.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-                  <Link to="/business">
+                  <Link to="/dashboard">
                     <div className="flex items-center gap-2 rounded-full bg-background px-6 py-3 text-sm font-semibold text-primary shadow-lg">
                       <PlayCircle className="h-4 w-4" />
-                      Business dashboard
+                      Launch App
                     </div>
                   </Link>
                 </motion.div>

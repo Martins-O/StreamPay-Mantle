@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Building2, ShieldCheck, Wallet, Workflow, Cpu, Sparkles } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import WalletGuard from '@/components/WalletGuard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,9 +46,10 @@ const personas = [
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      <main className="container mx-auto px-4 pt-28 pb-20 space-y-16">
+    <WalletGuard>
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-28 pb-20 space-y-16">
         <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] items-center">
           <div className="space-y-6">
             <Badge variant="outline" className="uppercase tracking-[0.35em]">Unified dashboard</Badge>
@@ -144,6 +146,7 @@ const Dashboard = () => {
       </main>
       <Footer />
     </div>
+    </WalletGuard>
   );
 };
 

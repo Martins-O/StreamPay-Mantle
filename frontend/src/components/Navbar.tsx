@@ -15,13 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { TARGET_CHAIN_ID, TARGET_CHAIN_NAME } from '@/lib/web3';
-import { navRoutes } from '@/routes';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { publicRoutes, protectedRoutes } from '@/routes';
 
 const LogoMark = () => (
   <svg
@@ -67,11 +61,8 @@ const Navbar = () => {
 
   const isWrongNetwork = isConnected && chainId !== undefined && chainId !== TARGET_CHAIN_ID;
 
-  const navItems = navRoutes;
-  const opsRoutes = [
-    { path: '/business', label: 'Business workspace' },
-    { path: '/investor', label: 'Investor cockpit' },
-  ];
+  // Show different navigation based on wallet connection status
+  const navItems = isConnected ? protectedRoutes : publicRoutes;
 
   const truncateAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -163,20 +154,6 @@ const Navbar = () => {
                 {item.label}
               </Link>
             ))}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="px-0 text-sm font-medium text-muted-foreground hover:text-primary">
-                  Operations
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="glass-card border-border/60">
-                {opsRoutes.map((route) => (
-                  <DropdownMenuItem key={route.path} asChild>
-                    <Link to={route.path}>{route.label}</Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           <div className="flex items-center gap-2">
@@ -258,21 +235,6 @@ const Navbar = () => {
                       {item.label}
                     </Link>
                   ))}
-                  <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Operations</p>
-                    {opsRoutes.map((route) => (
-                      <Link
-                        key={route.path}
-                        to={route.path}
-                        onClick={() => setMobileOpen(false)}
-                        className={`block text-lg font-medium transition-colors hover:text-primary ${
-                          location.pathname === route.path ? 'text-primary' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {route.label}
-                      </Link>
-                    ))}
-                  </div>
 
                   <Button
                     variant="ghost"
