@@ -22,29 +22,32 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('hourly');
   const primaryToken = stream.tokens[0];
 
-  if (!primaryToken) {
-    return (
-      <Card className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-2">Stream Analytics</h3>
-        <p className="text-sm text-muted-foreground">
-          This stream does not have any token allocations yet. Once tokens are deposited, analytics will appear here.
-        </p>
-      </Card>
-    );
-  }
+  const decimals = primaryToken?.tokenDecimals ?? 18;
+  const tokenSymbol = primaryToken?.tokenSymbol ?? (primaryToken ? `${primaryToken.token.slice(0, 6)}...${primaryToken.token.slice(-4)}` : 'TOKEN');
 
-  const decimals = primaryToken.tokenDecimals ?? 18;
-  const tokenSymbol = primaryToken.tokenSymbol ?? `${primaryToken.token.slice(0, 6)}...${primaryToken.token.slice(-4)}`;
   const totalAmount = useMemo(
-    () => parseFloat(formatTokenAmount(primaryToken.totalAmount, decimals)),
-    [primaryToken.totalAmount, decimals],
+    () => primaryToken ? parseFloat(formatTokenAmount(primaryToken.totalAmount, decimals)) : 0,
+    [primaryToken, decimals],
   );
+
   const totalDurationSeconds = useMemo(
     () => Math.max(Number(stream.duration), 1),
     [stream.duration],
   );
 
   const computeProgress = useCallback(() => {
+    if (!primaryToken) {
+      return {
+        elapsedSeconds: 0,
+        fraction: 0,
+        streamedAmount: 0n,
+        claimableAmount: 0n,
+        remainingToStream: 0n,
+        remainingToClaim: 0n,
+        progressPercent: 0,
+        isNotStarted: false,
+      };
+    }
     const nowSeconds = Math.floor(Date.now() / 1000);
     const adjustedEnd = Number(stream.startTime + stream.duration);
     const cappedNow = Math.min(nowSeconds, adjustedEnd);
@@ -95,7 +98,7 @@ const StreamChart = ({ stream }: StreamChartProps) => {
       progressPercent: Math.min(Math.max(totalProgress, 0), 100),
       isNotStarted: nowSeconds < Number(stream.startTime),
     };
-  }, [stream, totalDurationSeconds]);
+  }, [stream, totalDurationSeconds, primaryToken]);
 
   const [snapshot, setSnapshot] = useState(() => computeProgress());
 
@@ -114,8 +117,8 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   }, [computeProgress]);
 
   const totalFormatted = useMemo(
-    () => formatTokenAmount(primaryToken.totalAmount, decimals),
-    [primaryToken.totalAmount, decimals],
+    () => primaryToken ? formatTokenAmount(primaryToken.totalAmount, decimals) : '0',
+    [primaryToken, decimals],
   );
   const streamedFormatted = useMemo(
     () => formatTokenAmount(snapshot.streamedAmount, decimals),
@@ -126,8 +129,8 @@ const StreamChart = ({ stream }: StreamChartProps) => {
     [snapshot.claimableAmount, decimals],
   );
   const claimedFormatted = useMemo(
-    () => formatTokenAmount(primaryToken.claimedAmount, decimals),
-    [primaryToken.claimedAmount, decimals],
+    () => primaryToken ? formatTokenAmount(primaryToken.claimedAmount, decimals) : '0',
+    [primaryToken, decimals],
   );
   const remainingFormatted = useMemo(
     () => formatTokenAmount(snapshot.remainingToStream, decimals),
@@ -138,6 +141,18 @@ const StreamChart = ({ stream }: StreamChartProps) => {
   const ratePerSecond = totalDurationSeconds > 0 ? totalAmountNumber / totalDurationSeconds : 0;
   const ratePerHour = ratePerSecond * 3_600;
   const ratePerDay = ratePerHour * 24;
+
+  // Early return check AFTER all hooks
+  if (!primaryToken) {
+    return (
+      <Card className="glass-card p-6">
+        <h3 className="text-lg font-semibold mb-2">Stream Analytics</h3>
+        <p className="text-sm text-muted-foreground">
+          This stream does not have any token allocations yet. Once tokens are deposited, analytics will appear here.
+        </p>
+      </Card>
+    );
+  }
 
   const elapsedSeconds = snapshot.elapsedSeconds;
   const elapsedLabel = elapsedSeconds === 0

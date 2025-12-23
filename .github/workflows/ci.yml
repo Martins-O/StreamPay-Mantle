@@ -55,4 +55,4 @@ jobs:
 
       - name: AI service tests
         working-directory: ai-service
-        run: pytest
+        run: PYTHONPATH=. pytest

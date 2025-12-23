@@ -583,7 +583,7 @@ const Business = () => {
             <div className="grid gap-4">
               {sortedStreams.map((stream) => {
                 const streamId = typeof stream.id === 'string' ? stream.id : stream.id?.toString?.() ?? '—';
-                const streamRecipient = (stream as any).receiver ?? (stream as any).recipient ?? '—';
+                const streamRecipient = stream.recipient ?? '—';
                 return (
                   <Card key={streamId} className="p-5">
                     <div className="flex flex-col md:flex-row gap-6">

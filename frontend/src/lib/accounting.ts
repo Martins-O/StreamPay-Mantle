@@ -64,7 +64,7 @@ export function calculateAccrual({
     return { claimable: 0n, accrualPoint: effectiveTime };
   }
 
-  let elapsed = effectiveTime > startTime ? effectiveTime - startTime : 0n;
+  const elapsed = effectiveTime > startTime ? effectiveTime - startTime : 0n;
 
   if (pausedDuration > elapsed) {
     pausedDuration = elapsed;
