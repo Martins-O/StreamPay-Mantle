@@ -1,0 +1,26 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Liquifi Logo Icon: Droplet-Coin Hybrid -->
+  <defs>
+    <linearGradient id="liquifiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A1628;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#06B6D4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#22D3EE;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main droplet shape -->
+  <path d="M32 8 C32 8, 20 24, 20 36 C20 44.837, 25.373 52, 32 52 C38.627 52, 44 44.837, 44 36 C44 24, 32 8, 32 8 Z"
+        fill="url(#liquifiGradient)" opacity="0.9"/>
+
+  <!-- Coin circle overlay -->
+  <circle cx="32" cy="36" r="12" fill="none" stroke="#F59E0B" stroke-width="2" opacity="0.8"/>
+
+  <!-- Inner flowing particles -->
+  <circle cx="28" cy="32" r="2" fill="#67E8F9" opacity="0.6"/>
+  <circle cx="36" cy="34" r="1.5" fill="#67E8F9" opacity="0.5"/>
+  <circle cx="32" cy="38" r="1.8" fill="#67E8F9" opacity="0.7"/>
+
+  <!-- Dollar sign hint -->
+  <path d="M32 30 L32 42 M29 32 L35 32 M29 40 L35 40"
+        stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+</svg>

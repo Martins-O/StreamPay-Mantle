@@ -1,8 +1,9 @@
 {
-  "name": "streamyield-backend",
-  "version": "0.1.0",
+  "name": "liquifi-backend",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
+  "description": "Liquifi Protocol Backend API - AI-powered risk management and business orchestration",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
