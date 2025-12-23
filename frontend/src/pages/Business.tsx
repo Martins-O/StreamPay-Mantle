@@ -527,40 +527,6 @@ const Business = () => {
               ))}
             </div>
           </Card>
-
-          <Card className="p-6 space-y-4">
-            <h2 className="text-xl font-semibold">Operations desk</h2>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li className="rounded-xl border border-border/60 p-4">
-                <p className="font-semibold text-foreground">FastAPI risk service</p>
-                <p>Status: <span className="text-green-500">healthy</span>. Ensure `uvicorn` runs from `ai-service/.venv`.</p>
-                {backendConfig && (
-                  <p className="text-xs text-muted-foreground break-all">{backendConfig.aiServiceUrl}</p>
-                )}
-              </li>
-              <li className="rounded-xl border border-border/60 p-4">
-                <p className="font-semibold text-foreground">Backend signer</p>
-                <p>Environment-driven private key. Rotate credentials via `.env` then restart `start-services.sh`.</p>
-                {backendConfig && (
-                  <p className="text-xs text-muted-foreground break-all">
-                    Risk oracle: {backendConfig.riskOracleAddress || 'not configured'}
-                  </p>
-                )}
-              </li>
-              <li className="rounded-xl border border-border/60 p-4">
-                <p className="font-semibold text-foreground">Legacy tooling</p>
-                <p>Open the legacy console for low-level stream debugging or manual payouts.</p>
-                {backendConfig && (
-                  <p className="text-xs text-muted-foreground break-all">
-                    Pools registry: {backendConfig.poolRegistryPath}
-                  </p>
-                )}
-              </li>
-            </ul>
-            <Button asChild variant="outline">
-              <Link to="/legacy-console">Jump to legacy console</Link>
-            </Button>
-          </Card>
         </section>
 
         <section className="space-y-4">
