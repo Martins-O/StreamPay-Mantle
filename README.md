@@ -202,8 +202,24 @@ npm run dev             # Vite dev server on http://localhost:3000
 ## Why Mantle
 
 - **Ultra-low fees**: The StreamEngine mints NFTs + streams multiple ERC-20s for pennies on Mantle testnet.
-- **Modular stack**: Mantle’s modular rollup lets us compose RealFi rails (revenue tokens + AI oracles) without touching L1.
-- **RealFi focus**: Mantle’s 2025 hackathon theme aligns with tokenized cashflow + AI underwriting — StreamYield showcases a full vertical slice.
+- **Modular stack**: Mantle's modular rollup lets us compose RealFi rails (revenue tokens + AI oracles) without touching L1.
+- **RealFi focus**: Mantle's 2025 hackathon theme aligns with tokenized cashflow + AI underwriting — StreamYield showcases a full vertical slice.
+
+## Deployment
+
+### Render (Hosting)
+
+For deploying to Render, see [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed instructions.
+
+**Quick Fix for Common Error**: If you see `Cannot find module '/opt/render/project/src/backend/dist/index.js'`, you need to set the **Root Directory** to `backend` in your Render service settings.
+
+The repository includes a `render.yaml` file for automated deployment of both backend and frontend services.
+
+### Other Platforms
+
+- **Vercel/Netlify**: Frontend can be deployed as a static site (set build directory to `frontend/`)
+- **Railway/Fly.io**: Backend can be deployed as a Node.js app (set root to `backend/`)
+- **AWS/GCP/Azure**: Standard container/VM deployment with Docker
 
 ## Docs & Pitch
 
