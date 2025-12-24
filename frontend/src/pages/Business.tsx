@@ -20,6 +20,7 @@ import { REVENUE_FACTORY_ABI, REVENUE_FACTORY_ADDRESS, ZERO_ADDRESS } from '@/li
 import { MOCK_USDT_ADDRESS } from '@/lib/contract';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ShieldCheck } from 'lucide-react';
+import InfoTooltip from '@/components/InfoTooltip';
 
 const defaultProfile: Omit<BusinessRegistrationPayload, 'address'> = {
   name: '',
@@ -53,17 +54,20 @@ const heroStats = [
   {
     label: 'AI refresh SLA',
     value: '< 60s',
-    caption: 'Deterministic scoring'
+    caption: 'Deterministic scoring',
+    tooltip: 'FastAPI generates risk scores in under 60 seconds with deterministic, reproducible logic'
   },
   {
     label: 'Signer uptime',
     value: '99.9%',
-    caption: 'Pino-monitored keys'
+    caption: 'Pino-monitored keys',
+    tooltip: 'Backend signer maintains 99.9% uptime with hardware-secured private keys for EIP-712 signatures'
   },
   {
     label: 'Pools connected',
     value: '3',
-    caption: 'Mantle testnet'
+    caption: 'Mantle testnet',
+    tooltip: 'Currently connected to 3 active YieldPools on Mantle testnet accepting revenue streams'
   }
 ] as const;
 
@@ -71,17 +75,20 @@ const lifecycle = [
   {
     step: '01',
     title: 'Profile & KYC-lite',
-    description: 'Register revenue + volatility metrics so the AI oracle understands your cashflows.'
+    description: 'Register revenue + volatility metrics so the AI oracle understands your cashflows.',
+    tooltip: 'Submit basic business data—no lengthy KYC. AI analyzes revenue patterns to generate initial risk score'
   },
   {
     step: '02',
     title: 'Refresh risk',
-    description: 'Call the FastAPI service, capture rationale, and sign payloads for the oracle adapter.'
+    description: 'Call the FastAPI service, capture rationale, and sign payloads for the oracle adapter.',
+    tooltip: 'One-click refresh updates your risk band, rationale, and cryptographic signature for on-chain verification'
   },
   {
     step: '03',
     title: 'Mint + stream',
-    description: 'Deploy RevenueTokens, route repayments through StreamEngine, and surface telemetry.'
+    description: 'Deploy RevenueTokens, route repayments through StreamEngine, and surface telemetry.',
+    tooltip: 'Create ERC-20 revenue tokens, connect to StreamEngine, and start accepting investor deposits into YieldPool'
   }
 ] as const;
 
@@ -254,7 +261,10 @@ const Business = () => {
             <div className="grid gap-4 pt-8 sm:grid-cols-3">
               {heroStats.map((stat) => (
                 <div key={stat.label} className="rounded-2xl border border-border/40 bg-background/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{stat.label}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{stat.label}</p>
+                    <InfoTooltip content={stat.tooltip} side="top" />
+                  </div>
                   <p className="text-2xl font-semibold mt-2">{stat.value}</p>
                   <p className="text-sm text-muted-foreground">{stat.caption}</p>
                 </div>
@@ -519,9 +529,12 @@ const Business = () => {
               {lifecycle.map((stage) => (
                 <div key={stage.title} className="flex gap-4">
                   <span className="text-sm font-semibold text-primary">{stage.step}</span>
-                  <div>
-                    <p className="font-semibold">{stage.title}</p>
-                    <p className="text-sm text-muted-foreground">{stage.description}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{stage.title}</p>
+                      <InfoTooltip content={stage.tooltip} side="top" />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{stage.description}</p>
                   </div>
                 </div>
               ))}

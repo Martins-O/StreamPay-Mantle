@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { fetchPools, type PoolResponse } from '@/lib/api';
 import { YIELD_POOL_ABI, ZERO_ADDRESS } from '@/lib/streamYield';
 import { MOCK_USDT_ADDRESS, ERC20_ABI } from '@/lib/contract';
+import InfoTooltip from '@/components/InfoTooltip';
 
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
@@ -46,9 +47,9 @@ const Investor = () => {
   const totalTVL = useMemo(() => pools.reduce((sum, pool) => sum + pool.metrics.tvl, 0), [pools]);
   const lowRiskPools = useMemo(() => pools.filter((pool) => pool.metrics.risk?.band === 'LOW').length, [pools]);
   const heroHighlights = [
-    { label: 'Live pools', value: pools.length || '—', caption: 'Curated from business workspace' },
-    { label: 'TVL tracked', value: currencyFormatter.format(totalTVL), caption: 'Off-chain mirror' },
-    { label: 'LOW risk signal', value: lowRiskPools || '0', caption: 'AI certified pools' },
+    { label: 'Live pools', value: pools.length || '—', caption: 'Curated from business workspace', tooltip: 'Active YieldPools accepting deposits—each backed by revenue streams from verified businesses' },
+    { label: 'TVL tracked', value: currencyFormatter.format(totalTVL), caption: 'Off-chain mirror', tooltip: 'Total value locked across all pools. Real-time updates via backend API mirroring on-chain state' },
+    { label: 'LOW risk signal', value: lowRiskPools || '0', caption: 'AI certified pools', tooltip: 'Pools with LOW risk band from AI oracle—highest quality revenue streams with stable cashflows' },
   ];
 
   const handleApprove = async () => {
@@ -127,7 +128,10 @@ const Investor = () => {
             <div className="grid gap-4 pt-8 sm:grid-cols-3">
               {heroHighlights.map((stat) => (
                 <div key={stat.label} className="rounded-2xl border border-border/40 bg-background/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{stat.label}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{stat.label}</p>
+                    <InfoTooltip content={stat.tooltip} side="top" />
+                  </div>
                   <p className="text-2xl font-semibold mt-2">{stat.value}</p>
                   <p className="text-sm text-muted-foreground">{stat.caption}</p>
                 </div>
