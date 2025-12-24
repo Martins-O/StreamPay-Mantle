@@ -18,6 +18,13 @@ import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import InfoTooltip from '@/components/InfoTooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const HowItWorks = () => {
   const steps = [
@@ -88,30 +95,35 @@ const HowItWorks = () => {
       icon: Zap,
       title: 'AI-Powered Risk Scoring',
       description: 'FastAPI service generates deterministic risk scores with transparent rationale, signed via EIP-712 for trustless on-chain verification.',
+      tooltip: 'Risk scores are generated off-chain and cryptographically signed, then verified on-chain for maximum transparency',
       color: 'text-cyan-500',
     },
     {
       icon: Shield,
       title: 'Secure & Transparent',
       description: 'All transactions and risk scores are verified on-chain. Smart contracts manage funds with zero intermediaries or custodial risk.',
+      tooltip: 'Non-custodial by design - you always maintain full control of your assets',
       color: 'text-purple-500',
     },
     {
       icon: CheckCircle2,
       title: 'Instant Liquidity',
       description: 'Businesses get immediate capital against future revenue without waiting 30-90 days for invoice payments or subscription renewals.',
+      tooltip: 'Typical funding time: 6-24 hours from application to receiving capital',
       color: 'text-green-500',
     },
     {
       icon: Droplets,
       title: 'Real-Time Yield',
       description: 'Investors earn yield every second as revenue streams into the YieldPool. No monthly distributions - fully automated and continuous.',
+      tooltip: 'Yield compounds continuously - claim anytime without waiting for distribution schedules',
       color: 'text-amber-500',
     },
     {
       icon: Coins,
       title: 'Composable DeFi Primitives',
       description: 'RevenueTokens, YieldBackedTokens, and StreamEngine are modular building blocks that integrate with any DeFi protocol on Mantle.',
+      tooltip: 'Use YBT tokens as collateral, stake them, or integrate with other Mantle DeFi protocols',
       color: 'text-rose-500',
     },
   ];
@@ -120,31 +132,37 @@ const HowItWorks = () => {
     {
       title: 'SaaS ARR Financing',
       description: 'Turn annual recurring revenue into immediate working capital. Investors fund your MRR, you pay back as customers renew.',
+      tooltip: 'Example: $100K ARR SaaS company can get $70K upfront, repaid as subscriptions renew',
       icon: '💻',
     },
     {
       title: 'Invoice Factoring',
       description: 'Convert B2B invoices with 30-90 day payment terms into instant liquidity. No more waiting for slow-paying customers.',
+      tooltip: 'Get 80-90% of invoice value immediately, full payment when customer pays',
       icon: '📄',
     },
     {
       title: 'Real Estate Cashflow',
       description: 'Tokenize rent rolls and stream payments to liquidity providers. Get upfront capital against future lease income.',
+      tooltip: 'Property owners can unlock 6-12 months of rent upfront for renovations or new acquisitions',
       icon: '🏠',
     },
     {
       title: 'Trade Finance',
       description: 'Embed Liquifi into supply chain platforms. Suppliers get paid instantly while logistics partners earn yield on receivables.',
+      tooltip: 'Suppliers get instant payment, buyers keep payment terms, logistics partners earn yield',
       icon: '📦',
     },
     {
       title: 'Creator Economy',
       description: 'Monetize future sponsorships, memberships, and content revenue. Creators get upfront funding, backers earn from success.',
+      tooltip: 'Creators with predictable revenue can fund projects without platform lock-in',
       icon: '🎨',
     },
     {
       title: 'Revenue-Based Loans',
       description: 'Non-dilutive growth capital tied to actual revenue performance. Repay automatically as your business scales.',
+      tooltip: 'Pay back a percentage of revenue - higher revenue months mean higher repayments, lower means lower',
       icon: '📈',
     },
   ];
@@ -268,11 +286,10 @@ const HowItWorks = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <h2 className="text-3xl font-bold">{step.title}</h2>
-                    <Badge variant="secondary" className="flex items-center gap-2 w-fit">
-                      <Info className="h-3 w-3" />
-                      {step.tip}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-3xl font-bold">{step.title}</h2>
+                      <InfoTooltip content={step.tip} side="right" />
+                    </div>
                   </div>
 
                   <p className="text-lg text-muted-foreground">{step.description}</p>
@@ -331,7 +348,10 @@ const HowItWorks = () => {
               >
                 <Card className="glass-card p-8 h-full hover:scale-105 transition-transform">
                   <feature.icon className={`h-12 w-12 ${feature.color} mb-6`} />
-                  <h3 className="text-xl font-semibold mb-4">{feature.title}</h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-xl font-semibold">{feature.title}</h3>
+                    <InfoTooltip content={feature.tooltip} side="top" />
+                  </div>
                   <p className="text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
@@ -380,7 +400,10 @@ const HowItWorks = () => {
               >
                 <Card className="glass-card p-6 h-full">
                   <div className="text-4xl mb-4">{useCase.icon}</div>
-                  <h3 className="text-lg font-semibold mb-3">{useCase.title}</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-lg font-semibold">{useCase.title}</h3>
+                    <InfoTooltip content={useCase.tooltip} side="top" />
+                  </div>
                   <p className="text-sm text-muted-foreground">{useCase.description}</p>
                 </Card>
               </motion.div>

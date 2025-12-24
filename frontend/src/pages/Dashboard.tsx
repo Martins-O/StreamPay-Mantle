@@ -6,22 +6,26 @@ import WalletGuard from '@/components/WalletGuard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import InfoTooltip from '@/components/InfoTooltip';
 
 const steps = [
   {
     title: 'Register profile',
     description: 'Submit business metadata so the AI oracle can underwrite your cashflows.',
     icon: <Building2 className="h-5 w-5" />,
+    tooltip: 'Provide business name, revenue type, monthly volume. AI analyzes this to generate your risk score',
   },
   {
     title: 'Refresh AI risk',
     description: 'One click fetches a deterministic score, rationale, and signed payload.',
     icon: <Cpu className="h-5 w-5" />,
+    tooltip: 'FastAPI scores your profile (0-100), backend signs it, contract verifies signature. Takes ~2 seconds',
   },
   {
     title: 'Stream + invest',
     description: 'Route revenue to the YieldPool while investors deposit stablecoins.',
     icon: <Workflow className="h-5 w-5" />,
+    tooltip: 'Your revenue streams into pool, investors deposit USDC/MNT, everyone earns yield in real-time',
   },
 ];
 
@@ -33,6 +37,7 @@ const personas = [
     cta: 'Open Business control center',
     to: '/business',
     icon: <ShieldCheck className="h-5 w-5 text-primary" />,
+    tooltip: 'Get instant liquidity against future revenue. Mint tokens, connect streams, update risk scores anytime',
   },
   {
     title: 'For investors',
@@ -41,6 +46,7 @@ const personas = [
     cta: 'Explore investor cockpit',
     to: '/investor',
     icon: <Wallet className="h-5 w-5 text-primary" />,
+    tooltip: 'Deposit stablecoins, earn yield from real business revenue. Live AI risk scores show pool health',
   },
 ];
 
@@ -107,6 +113,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-3 text-primary">
                 {step.icon}
                 <h3 className="text-lg font-semibold text-foreground">{step.title}</h3>
+                <InfoTooltip content={step.tooltip} side="top" />
               </div>
               <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
             </Card>
@@ -117,10 +124,13 @@ const Dashboard = () => {
           {personas.map((persona) => (
             <Card key={persona.title} className="p-6 flex flex-col justify-between border-border/60">
               <div className="space-y-3">
-                <Badge variant="secondary" className="w-fit flex items-center gap-2">
-                  {persona.icon}
-                  {persona.title}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="w-fit flex items-center gap-2">
+                    {persona.icon}
+                    {persona.title}
+                  </Badge>
+                  <InfoTooltip content={persona.tooltip} side="top" />
+                </div>
                 <p className="text-muted-foreground leading-relaxed">{persona.description}</p>
               </div>
               <Button asChild className="mt-6">

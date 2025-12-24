@@ -17,6 +17,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card } from '@/components/ui/card';
+import InfoTooltip from '@/components/InfoTooltip';
 
 const heroCopy = {
   heading: 'Tokenize revenue. Stream AI-scored yield on Mantle.',
@@ -33,16 +34,19 @@ const problemPoints = [
     icon: AlarmCheck,
     title: 'Working capital trapped in invoices',
     description: 'Vendors wait 30-90 days to convert ARR or rent into usable liquidity, stalling hiring and growth.',
+    tooltip: 'Traditional factoring charges 2-5% monthly. Liquifi provides instant liquidity at transparent on-chain rates',
   },
   {
     icon: Route,
     title: 'Fragmented streaming rails',
-    description: 'Revenue-based financing still relies on spreadsheets. There’s no single primitive for streams, vaults, and risk data.',
+    description: 'Revenue-based financing still relies on spreadsheets. There is no single primitive for streams, vaults, and risk data.',
+    tooltip: 'Current RBF solutions require custom integrations per lender. Liquifi standardizes everything in composable smart contracts',
   },
   {
     icon: ShieldCheck,
     title: 'Risk is opaque',
-    description: 'Investors can’t trust off-chain PDFs. They need signed AI risk updates before deploying stablecoins.',
+    description: 'Investors cannot trust off-chain PDFs. They need signed AI risk updates before deploying stablecoins.',
+    tooltip: 'AI risk scores are cryptographically signed off-chain, then verified on-chain—combining speed with trustlessness',
   },
 ];
 
@@ -51,16 +55,19 @@ const solutionHighlights = [
     icon: Waves,
     title: 'RevenueToken factory',
     description: 'Deploy ERC-20 claims backed by ARR, trade finance, or rent, then stream repayments through StreamEngine.',
+    tooltip: 'Mint custom ERC-20 tokens representing revenue rights. Tradeable, composable, fully on-chain—no legal wrappers needed',
   },
   {
     icon: PiggyBank,
     title: 'YieldPool + YBT',
     description: 'Investors deposit USDC/MNT, receive YieldBackedToken shares, and earn real-time revenue distribution.',
+    tooltip: 'Like a mutual fund for revenue streams: deposit stablecoins, get yield-bearing tokens, redeem anytime with accrued revenue',
   },
   {
     icon: Workflow,
     title: 'AI Risk Oracle',
     description: 'A backend signer feeds FastAPI scoring outputs into RiskOracleAdapter for trustless underwriting.',
+    tooltip: 'FastAPI generates risk scores off-chain for speed, backend signs them, smart contract verifies signature on-chain',
   },
 ];
 
@@ -69,38 +76,44 @@ const howItWorks = [
     step: '01',
     title: 'Fund the vault',
     copy: 'Approve once, deposit tokens, and StreamManager escrows the full amount for your stream or batch.',
+    tooltip: 'One-time ERC-20 approval, then deposit. Funds locked in StreamVault until stream completes or you pause it',
   },
   {
     step: '02',
     title: 'Configure the flow',
     copy: 'Pick recipient, total amount, duration, and optional templates. Streams start ticking immediately with second-level precision.',
+    tooltip: 'Set recipient address, total tokens, duration in seconds. Stream starts immediately—no waiting periods',
   },
   {
     step: '03',
     title: 'Monitor & automate',
     copy: 'Recipients claim on demand, senders pause/resume instantly, and analytics visualize actual vs projected throughput.',
+    tooltip: 'Dashboard shows real-time accrual. Recipients claim anytime, senders can pause for emergencies—full control',
   },
 ];
 
 const metrics = [
-  { label: 'gas cost per action', value: '< $0.01', caption: 'Mantle L2 keeps costs negligible.' },
-  { label: 'stream precision', value: '1 second', caption: 'Calculated via on-chain accrual library.' },
-  { label: 'escrow safety', value: '100% on-chain', caption: 'No custodial dependencies or manual payouts.' },
-  { label: 'automation ready', value: 'Webhooks (soon)', caption: 'Upcoming triggers for payroll, SaaS, and grants.' },
+  { label: 'gas cost per action', value: '< $0.01', caption: 'Mantle L2 keeps costs negligible.', tooltip: 'Typical transaction costs: Stream creation ~$0.005, claiming ~$0.003, powered by Mantle L2 efficiency' },
+  { label: 'stream precision', value: '1 second', caption: 'Calculated via on-chain accrual library.', tooltip: 'Revenue accrues every second with deterministic on-chain math—no off-chain dependencies or rounding errors' },
+  { label: 'escrow safety', value: '100% on-chain', caption: 'No custodial dependencies or manual payouts.', tooltip: 'All funds locked in audited smart contracts. No admin keys, no centralized control, fully trustless' },
+  { label: 'automation ready', value: 'Webhooks (soon)', caption: 'Upcoming triggers for payroll, SaaS, and grants.', tooltip: 'Upcoming: Auto-trigger streams on Stripe invoice creation, Quickbooks entries, or custom events' },
 ];
 
 const useCases = [
   {
     title: 'SaaS ARR financing',
     description: 'Turn annual subscriptions into instant liquidity while investors receive second-by-second revenue splits.',
+    tooltip: 'Example: $100K ARR → get $70K upfront, repay as subscriptions renew, investors earn yield on actual revenue',
   },
   {
     title: 'Invoice / trade finance',
     description: 'Embed Liquifi into logistics partners so receivables fund a shared Mantle pool with live risk scores.',
+    tooltip: 'Get 80-90% of invoice value immediately instead of waiting 60-90 days. Pool investors earn from invoice payments',
   },
   {
     title: 'Real estate cashflow',
     description: 'Tokenize rent rolls and stream payments to liquidity providers that want transparent RealFi exposure.',
+    tooltip: 'Tokenize monthly rent, get upfront capital for renovations, tenants pay into pool, investors earn rental yield',
   },
 ];
 
@@ -188,7 +201,10 @@ const Index = () => (
             <div className="mt-16 grid gap-4 sm:grid-cols-2 md:grid-cols-4 max-w-5xl mx-auto">
               {metrics.map(metric => (
                 <Card key={metric.label} className="glass-card p-5">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{metric.label}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{metric.label}</p>
+                    <InfoTooltip content={metric.tooltip} side="top" />
+                  </div>
                   <p className="mt-2 text-2xl font-semibold gradient-text">{metric.value}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{metric.caption}</p>
                 </Card>
@@ -212,9 +228,12 @@ const Index = () => (
                   <Card key={point.title} className="glass-card p-6">
                     <div className="flex items-start gap-4">
                       <point.icon className="mt-1 h-6 w-6 text-primary" />
-                      <div>
-                        <h3 className="text-lg font-semibold">{point.title}</h3>
-                        <p className="text-sm text-muted-foreground">{point.description}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold">{point.title}</h3>
+                          <InfoTooltip content={point.tooltip} side="top" />
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{point.description}</p>
                       </div>
                     </div>
                   </Card>
@@ -232,9 +251,12 @@ const Index = () => (
                   <Card key={point.title} className="glass-card p-6">
                     <div className="flex items-start gap-4">
                       <point.icon className="mt-1 h-6 w-6 text-primary" />
-                      <div>
-                        <h3 className="text-lg font-semibold">{point.title}</h3>
-                        <p className="text-sm text-muted-foreground">{point.description}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold">{point.title}</h3>
+                          <InfoTooltip content={point.tooltip} side="top" />
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{point.description}</p>
                       </div>
                     </div>
                   </Card>
@@ -265,7 +287,10 @@ const Index = () => (
               >
                 <Card className="glass-card h-full rounded-3xl p-6">
                   <p className="text-sm font-semibold text-primary">{step.step}</p>
-                  <h3 className="mt-3 text-xl font-semibold">{step.title}</h3>
+                  <div className="flex items-center gap-2 mt-3">
+                    <h3 className="text-xl font-semibold">{step.title}</h3>
+                    <InfoTooltip content={step.tooltip} side="top" />
+                  </div>
                   <p className="mt-3 text-sm text-muted-foreground">{step.copy}</p>
                 </Card>
               </motion.div>
@@ -288,7 +313,10 @@ const Index = () => (
               <motion.div key={card.title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
                 <Card className="glass-card h-full rounded-3xl p-7">
                   <BarChart3 className="h-10 w-10 text-primary" />
-                  <h3 className="mt-5 text-xl font-semibold">{card.title}</h3>
+                  <div className="flex items-center gap-2 mt-5">
+                    <h3 className="text-xl font-semibold">{card.title}</h3>
+                    <InfoTooltip content={card.tooltip} side="top" />
+                  </div>
                   <p className="mt-3 text-sm text-muted-foreground">{card.description}</p>
                 </Card>
               </motion.div>
