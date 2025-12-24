@@ -9,12 +9,15 @@ import {
   ChevronRight,
   CheckCircle2,
   ArrowRight,
-  Play
+  Play,
+  HelpCircle,
+  Info
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const HowItWorks = () => {
   const steps = [
@@ -23,6 +26,7 @@ const HowItWorks = () => {
       icon: Shield,
       title: 'Business Submits Revenue Data',
       description: 'Businesses submit metadata about their revenue streams - invoices, subscriptions, or rent rolls.',
+      tip: 'No upfront fees - only pay when funded',
       details: [
         'Upload business profile and revenue documentation',
         'Connect accounting systems or provide manual data',
@@ -34,6 +38,7 @@ const HowItWorks = () => {
       icon: Zap,
       title: 'AI Risk Oracle Scores',
       description: 'The FastAPI risk service analyzes the business and generates a signed AI risk score with rationale.',
+      tip: 'Scores update in real-time as your business grows',
       details: [
         'Deterministic scoring based on revenue stability',
         'EIP-712 signed payload for on-chain verification',
@@ -45,6 +50,7 @@ const HowItWorks = () => {
       icon: Coins,
       title: 'Mint RevenueToken',
       description: 'Business creates ERC-20 RevenueTokens backed by their future cashflows.',
+      tip: 'Tokens are tradeable - create a secondary market',
       details: [
         'Tokens represent claims on future revenue',
         'Minted through RevenueTokenFactory contract',
@@ -56,6 +62,7 @@ const HowItWorks = () => {
       icon: Wallet,
       title: 'Investors Provide Liquidity',
       description: 'Investors review the AI risk score and deposit stablecoins into the YieldPool to receive YieldBackedTokens (YBT).',
+      tip: 'Withdraw anytime - YBT shares are liquid',
       details: [
         'Deposit USDC or MNT into the YieldPool',
         'Receive YBT shares proportional to deposit',
@@ -67,6 +74,7 @@ const HowItWorks = () => {
       icon: Droplets,
       title: 'Revenue Streams & Yields',
       description: 'Business revenue flows into the YieldPool in real-time, distributing proportional yield to all YBT holders.',
+      tip: 'Watch your balance grow every second',
       details: [
         'Second-by-second streaming of revenue',
         'Automatic yield distribution to investors',
@@ -197,6 +205,37 @@ const HowItWorks = () => {
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
               Transform future revenue into instant capital with AI-powered risk management, yield streaming, and transparent on-chain verification.
             </p>
+
+            {/* Quick Tips */}
+            <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto mt-12">
+              <Card className="glass-card p-4">
+                <div className="flex items-start gap-3">
+                  <Badge variant="outline" className="mt-1">1</Badge>
+                  <div className="text-left">
+                    <p className="font-semibold text-sm mb-1">For Businesses</p>
+                    <p className="text-xs text-muted-foreground">Get funded in hours, not weeks. Zero equity dilution.</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="glass-card p-4">
+                <div className="flex items-start gap-3">
+                  <Badge variant="outline" className="mt-1">2</Badge>
+                  <div className="text-left">
+                    <p className="font-semibold text-sm mb-1">For Investors</p>
+                    <p className="text-xs text-muted-foreground">Earn real yield from revenue, not speculation.</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="glass-card p-4">
+                <div className="flex items-start gap-3">
+                  <Badge variant="outline" className="mt-1">3</Badge>
+                  <div className="text-left">
+                    <p className="font-semibold text-sm mb-1">Fully On-Chain</p>
+                    <p className="text-xs text-muted-foreground">Every transaction verified on Mantle L2.</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -228,7 +267,14 @@ const HowItWorks = () => {
                     </div>
                   </div>
 
-                  <h2 className="text-3xl font-bold">{step.title}</h2>
+                  <div className="space-y-3">
+                    <h2 className="text-3xl font-bold">{step.title}</h2>
+                    <Badge variant="secondary" className="flex items-center gap-2 w-fit">
+                      <Info className="h-3 w-3" />
+                      {step.tip}
+                    </Badge>
+                  </div>
+
                   <p className="text-lg text-muted-foreground">{step.description}</p>
 
                   <ul className="space-y-3">
@@ -266,8 +312,12 @@ const HowItWorks = () => {
               Why Choose <span className="gradient-text">Liquifi</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Built on cutting-edge technology to provide the best streaming payment experience.
+              Built on cutting-edge technology to provide the best revenue financing experience.
             </p>
+            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+              <HelpCircle className="h-4 w-4 text-primary" />
+              <span className="text-sm text-muted-foreground">Each feature is designed to maximize trust and minimize friction</span>
+            </div>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -306,8 +356,16 @@ const HowItWorks = () => {
               Real-World <span className="gradient-text">Use Cases</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Liquifi transforms how payments work across industries.
+              Liquifi transforms how businesses access capital across industries.
             </p>
+            <Card className="mt-8 max-w-2xl mx-auto glass-card p-4">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-muted-foreground text-left">
+                  <strong className="text-foreground">Getting Started:</strong> Each use case can be implemented in under 24 hours. Connect your wallet, submit your revenue data, and get instant liquidity.
+                </p>
+              </div>
+            </Card>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -347,6 +405,10 @@ const HowItWorks = () => {
             <p className="text-lg text-muted-foreground">
               The technical architecture of Liquifi's revenue financing protocol.
             </p>
+            <Badge variant="outline" className="mt-4">
+              <HelpCircle className="h-3 w-3 mr-2" />
+              For Developers: All contracts are open-source and auditable
+            </Badge>
           </motion.div>
 
           <div className="space-y-4">
