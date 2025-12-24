@@ -16,5 +16,25 @@ export default defineConfig(() => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Split vendor code
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'web3-vendor': ['wagmi', 'viem'],
+            'ui-vendor': ['framer-motion', 'lucide-react'],
+            'utils-vendor': ['sonner'],
+          },
+        },
+      },
+      // Increase chunk size warning limit
+      chunkSizeWarningLimit: 1000,
+      // Enable minification with esbuild (faster than terser)
+      minify: 'esbuild',
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router-dom'],
+    },
   };
 });
