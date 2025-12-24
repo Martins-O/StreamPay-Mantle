@@ -4,4 +4,3 @@ node_modules/
 tests/
 *.test.ts
 *.test.js
-tsconfig.json
