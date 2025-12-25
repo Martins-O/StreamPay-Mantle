@@ -6,6 +6,7 @@
   "description": "Liquifi Protocol Backend API - AI-powered risk management and business orchestration",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "prebuild": "npm install --save typescript@^5.9.3 @types/node@^20.19.27 @types/express@^4.17.25 @types/cors@^2.8.19",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "vitest run"
