@@ -378,9 +378,26 @@ The repository includes `render.yaml` for automated deployment.
 
 ---
 
+## 🔒 Security
+
+Security is our top priority. Please review our security practices:
+
+- **[SECURITY.md](SECURITY.md)** - Security policy, vulnerability disclosure, and best practices
+- **Environment Variables**: NEVER commit `.env` files with real private keys
+- **Responsible Disclosure**: Report vulnerabilities to security@liquifi.io
+- **Bug Bounty**: Coming soon after mainnet launch
+
+**Key Security Features:**
+- ReentrancyGuard on all fund transfers
+- EIP-712 signature verification for risk scores
+- Access control via OpenZeppelin's Ownable
+- 29 passing tests with 100% pass rate
+
+---
+
 ## 🤝 Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon) for guidelines.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
